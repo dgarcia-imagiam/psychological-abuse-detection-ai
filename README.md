@@ -57,12 +57,11 @@ Help us take PADAI from prototype to life-saving practice. Whether you write cod
 
 A multidisciplinary core team combining law, psychology, storytelling, organisational change and advanced AI research.
 
-|                                                                                                          |                                                                                                                                                                                                                                             |
-| -------------------------------------------------------------------------------------------------------- |---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **[David García Broto](https://www.linkedin.com/in/davidgarciabroto/)**                                  | Applied-AI scientist specialising in large language models, RAG pipelines and multi-agent systems; lead architect for PADAI’s model design, evaluation and open-source tooling.                                                       |
+| Name                                                                    | Background                                                                                                                                                                      |
+|-------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **[David García Broto](https://www.linkedin.com/in/davidgarciabroto/)** | Applied-AI scientist specialising in large language models, RAG pipelines and multi-agent systems; lead architect for PADAI’s model design, evaluation and open-source tooling. |
 
-
-Together we combine investigative storytelling, legal rigour, organisational change expertise, entrepreneurial execution and cutting-edge generative-AI research—laying the foundation for a tool that is technically robust, legally sound and socially impactful.
+> Together we combine investigative storytelling, legal rigor, organizational change expertise, entrepreneurial execution and cutting-edge generative-AI research—laying the foundation for a tool that is technically robust, legally sound and socially impactful.
 
 
 
