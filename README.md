@@ -63,9 +63,6 @@ A multidisciplinary core team combining law, psychology, storytelling, organisat
 
 > Together we combine investigative storytelling, legal rigor, organizational change expertise, entrepreneurial execution and cutting-edge generative-AI research—laying the foundation for a tool that is technically robust, legally sound and socially impactful.
 
+## License
 
-
-
-
-
-
+PADAI’s source code and dataset are released under the [Creative Commons Attribution–NonCommercial–ShareAlike 4.0 International](LICENSE) license.
