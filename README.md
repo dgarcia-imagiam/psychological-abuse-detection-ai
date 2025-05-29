@@ -13,7 +13,7 @@ For the long term, PADAI is also a platform for research across disciplines. Its
 ## Key Features
 
 - **Open-Science Seed Dataset ⚙️ (alpha)**  
-  An anonymised, ethically curated starter corpus of Spanish-language messages for evaluating psychological-abuse detection—released under an open licence to enable independent benchmarking and reuse. A larger public release will follow as we expand the dataset with new cases and complete further safeguarding reviews.
+  An anonymized, ethically curated starter corpus of Spanish-language messages for evaluating psychological-abuse detection—released under an open licence to enable independent benchmarking and reuse. A larger public release will follow as we expand the dataset with new cases and complete further safeguarding reviews.
 
 - **LangChain Detection Pipelines ✅ (prototype)**  
   AI workflows built with LangChain, designed to detect subtle and implicit signs of psychological abuse in written communication—capturing context and nuance beyond simple keyword spotting.
@@ -36,4 +36,37 @@ For the long term, PADAI is also a platform for research across disciplines. Its
   Includes vetted, bias-checked prompt templates and best-practice privacy tips.
 
 
-*We invite contributors and collaborators from all sectors to get involved and help advance PADAI’s mission.*
+> *We invite contributors and collaborators from all sectors to get involved and help advance PADAI’s mission.*
+
+## Call to Action
+
+Help us take PADAI from prototype to life-saving practice. Whether you write code, report stories, litigate cases, or support survivors directly, there’s a place for you here:
+
+| You are…                             | How you can help                                                                                                                                                              |
+| ------------------------------------ |-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Survivors & Front-line Advocates** | Share *anonymized* message patterns or lived-experience insights (secure channels available). Pilot the tool in support workflows and tell us what works—and what doesn’t.    |
+| **Lawyers & Legal Clinics**          | Evaluate PADAI as an evidence-screening aid, advise on admissibility standards, and co-author best-practice briefs that translate AI findings into courtroom-ready arguments. |
+| **Psychologists & Counselors**       | Stress-test our abuse taxonomies, contribute therapeutic perspectives, and help design safe user journeys for clients who review toxic conversations.                         |
+| **NGOs & Women’s Shelters**          | Partner on ethically collecting new data, co-run impact studies, or integrate PADAI into intake and safety-planning processes.                                                |
+| **Researchers & Data Scientists**    | Fork the code, propose new model architectures, or replicate our benchmarks. We welcome pull requests, issue reports, and joint grant proposals.                              |
+| **Journalists & Storytellers**       | Use our findings to highlight the often-invisible face of psychological abuse, or collaborate on data-driven investigations that push the topic into public discourse.        |
+| **Funders & Policy Makers**          | Sponsor dataset expansion, community roll-outs, or independent audits. Work with us to shape regulations that protect survivors while fostering responsible innovation.       |
+
+
+## Who We Are
+
+A multidisciplinary core team combining law, psychology, storytelling, organisational change and advanced AI research.
+
+|                                                                                                          |                                                                                                                                                                                                                                             |
+| -------------------------------------------------------------------------------------------------------- |---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **[David García Broto](https://www.linkedin.com/in/davidgarciabroto/)**                                  | Applied-AI scientist specialising in large language models, RAG pipelines and multi-agent systems; lead architect for PADAI’s model design, evaluation and open-source tooling.                                                       |
+
+
+Together we combine investigative storytelling, legal rigour, organisational change expertise, entrepreneurial execution and cutting-edge generative-AI research—laying the foundation for a tool that is technically robust, legally sound and socially impactful.
+
+
+
+
+
+
+
