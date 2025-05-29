@@ -1,2 +1,2 @@
-# psychological-abuse-detection-ai
-Where Generative AI meets gender-based violence prevention.
+# PADAI: Psychological Abuse Detection AI
+> **Where Generative AI meets gender-based violence prevention**
