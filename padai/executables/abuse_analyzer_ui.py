@@ -1,9 +1,8 @@
 import padai.config.bootstrap  # noqa: F401 always first import in main entry points
 
 import dash
-from dash import html, dcc, Input, Output, State, callback_context, no_update
+from dash import html, dcc, Input, Output, State, no_update
 import dash_bootstrap_components as dbc
-from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -257,7 +256,6 @@ def _apply_preset(preset):
     State("user-input", "value"),
     prevent_initial_call=True,
 )
-
 def run_analysis(n_clicks, model, temperature, system_prompt, human_prompt, user_msg):
     if not user_msg or not user_msg.strip():
         return no_update, "Escribe un mensaje y pulsa Analizar."

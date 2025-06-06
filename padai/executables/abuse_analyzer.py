@@ -1,9 +1,8 @@
 import padai.config.bootstrap  # noqa: F401 always first import in main entry points
 
-from langchain_openai import ChatOpenAI
+from padai.llms.openai import get_default_chat_openai
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from padai.config.settings import settings
 
 USER_INPUT = """\
 Querida Lucía,
@@ -26,9 +25,7 @@ def build_chain(model_name: str = "gpt-4.1-mini", temperature: float = 0.0):
             ("human", "Analiza el siguiente mensaje en busca de indicios de maltrato psicológico y explica tu razonamiento.\n\nMensaje:\n{user_input}"),
         ]
     )
-
-    llm = ChatOpenAI(model=model_name, temperature=temperature, api_key=settings.openai.api_key)
-
+    llm = get_default_chat_openai()
     parser = StrOutputParser()
 
     return prompt | llm | parser
