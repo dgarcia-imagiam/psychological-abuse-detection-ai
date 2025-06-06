@@ -1,10 +1,9 @@
-from __future__ import annotations
-
-from dotenv import load_dotenv
+import padai.config.bootstrap  # noqa: F401 always first import in main entry points
 
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+from padai.config.settings import settings
 
 USER_INPUT = """\
 Querida Lucía,
@@ -28,7 +27,7 @@ def build_chain(model_name: str = "gpt-4.1-mini", temperature: float = 0.0):
         ]
     )
 
-    llm = ChatOpenAI(model=model_name, temperature=temperature)
+    llm = ChatOpenAI(model=model_name, temperature=temperature, api_key=settings.openai.api_key)
 
     parser = StrOutputParser()
 
@@ -36,8 +35,6 @@ def build_chain(model_name: str = "gpt-4.1-mini", temperature: float = 0.0):
 
 
 def main(argv: list[str] | None = None) -> None:
-
-    load_dotenv()
 
     chain = build_chain()
     response: str = chain.invoke({"user_input": USER_INPUT})

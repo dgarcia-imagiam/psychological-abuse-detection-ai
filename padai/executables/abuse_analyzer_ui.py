@@ -1,3 +1,5 @@
+import padai.config.bootstrap  # noqa: F401 always first import in main entry points
+
 import dash
 from dash import html, dcc, Input, Output, State, callback_context, no_update
 import dash_bootstrap_components as dbc
@@ -6,12 +8,12 @@ from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 import openai
+from padai.config.settings import settings
+
 
 # ---------------------------------------------------------------------------
 # Config & helpers
 # ---------------------------------------------------------------------------
-
-load_dotenv()
 
 def build_chain(
     *,
@@ -34,7 +36,7 @@ def build_chain(
     if temperature is not None:
         llm_kwargs["temperature"] = temperature
 
-    llm = ChatOpenAI(**llm_kwargs)
+    llm = ChatOpenAI(**llm_kwargs, api_key=settings.openai.api_key)
     parser = StrOutputParser()
 
     return prompt | llm | parser
@@ -270,6 +272,7 @@ def run_analysis(n_clicks, model, temperature, system_prompt, human_prompt, user
         return "", f"⚠️ Error inesperado: {exc}"
 
     return result, ""
+
 
 # ---------------------------------------------------------------------------
 # Entry point
