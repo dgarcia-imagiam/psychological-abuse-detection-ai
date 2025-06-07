@@ -8,7 +8,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def build_chain(model_name: str = "gpt-4o-mini", temperature: float = 0.0):
+def build_chain():
     prompt = ChatPromptTemplate.from_messages(
         [
             ("system", "You are a concise assistant. Respond briefly."),
