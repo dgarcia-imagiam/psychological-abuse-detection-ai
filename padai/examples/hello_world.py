@@ -21,7 +21,7 @@ def build_chain():
     return prompt | llm | parser
 
 
-def main(argv: list[str] | None = None) -> None:
+def main() -> None:
     user_input = "Hello, world!"
 
     chain = build_chain()

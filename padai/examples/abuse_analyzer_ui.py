@@ -8,11 +8,9 @@ from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 import openai
 from padai.config.settings import settings
+from padai.prompts.psychological_abuse import abuse_analyzer_prompts
+from padai.datasets.psychological_abuse import get_communications_df, get_communications_text_sample
 
-
-# ---------------------------------------------------------------------------
-# Config & helpers
-# ---------------------------------------------------------------------------
 
 def build_chain(
     *,
@@ -21,8 +19,6 @@ def build_chain(
     human_prompt: str,
     temperature: float | None,
 ):
-    """Return <prompt | model | parser> chain according to user selections."""
-
     prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system_prompt),
@@ -30,7 +26,6 @@ def build_chain(
         ]
     )
 
-    # Some models (e.g. o3) ignore temperature; pass it only if not None
     llm_kwargs = {"model": model_name}
     if temperature is not None:
         llm_kwargs["temperature"] = temperature
@@ -40,30 +35,21 @@ def build_chain(
 
     return prompt | llm | parser
 
-# Which models ignore the temperature parameter?
+
 NO_TEMPERATURE_MODELS = {"o3", "o3-mini", "o4-mini"}
 
-PRESET_PROMPTS = {
-    "neutro": (
-        "Eres un experto en psicología forense que analiza mensajes escritos para detectar maltrato psicológico. Cuando el usuario te pida analizar un mensaje, identifica de manera objetiva y neutral cualquier indicio explícito o implícito de maltrato y explica tu razonamiento. Presenta un análisis exhaustivo en español, explicando cada conclusión clave en un texto claro y coherente."
-    ),
-    "vigilante": (
-        "Eres un experto en psicología forense que analiza mensajes escritos para detectar maltrato psicológico. Debes mantener una vigilancia especial y un umbral bajo para señalar cualquier indicio de maltrato, por sutil que sea. Cuando el usuario te pida analizar un mensaje, identifica de manera objetiva y neutral cualquier indicio explícito o implícito de maltrato y explica tu razonamiento. Presenta un análisis exhaustivo en español, explicando cada conclusión clave en un texto claro y coherente."
-    ),
-    "antecedentes": (
-        "Eres un experto en psicología forense que analiza mensajes escritos para detectar maltrato psicológico. Existe un historial confirmado y recurrente de maltrato psicológico hacia la persona receptora de los mensajes, por lo que debes mantener una vigilancia especial y un umbral bajo para señalar cualquier indicio, por sutil que sea. Cuando el usuario te pida analizar un mensaje, identifica de manera objetiva y neutral cualquier indicio explícito o implícito de maltrato y explica tu razonamiento. Presenta un análisis exhaustivo en español, explicando cada conclusión clave en un texto claro y coherente."
-    ),
-    "contundente": (
-        "Eres un experto en psicología forense que analiza mensajes escritos para detectar maltrato psicológico. Existe un historial confirmado y recurrente de maltrato psicológico hacia la persona receptora de los mensajes, por lo que debes mantener una vigilancia especial y un umbral bajo para señalar cualquier indicio, por sutil que sea. Cuando el usuario te pida analizar un mensaje, identifica con objetividad, pero de forma incisiva y contundente, cualquier indicio explícito o implícito de maltrato y explica tu razonamiento. No suavices el lenguaje: subraya con claridad las conductas abusivas y su posible impacto psicológico. Presenta un análisis exhaustivo en español, explicando cada conclusión clave en un texto claro y coherente."
-    ),
+PRESET_PROMPTS = abuse_analyzer_prompts[settings.language]["system"]
+
+PRESET_LABELS = {
+    "neutral": "Neutro",
+    "vigilant": "Vigilante",
+    "neutral_with_history": "Neutro (con antecedentes)",
+    "extreme_vigilant_with_history": "Muy vigilante (con antecedentes)",
 }
 
-DEFAULT_SYSTEM = PRESET_PROMPTS["antecedentes"]
+DEFAULT_SYSTEM = PRESET_PROMPTS["neutral"]
 
-DEFAULT_HUMAN = (
-    "Analiza el siguiente mensaje en busca de indicios de maltrato psicológico y explica tu razonamiento.\n\n"
-    "Mensaje:\n{user_input}"
-)
+DEFAULT_HUMAN = abuse_analyzer_prompts[settings.language]["human"]["default"]
 
 MODEL_OPTIONS = [
     {"label": "o3 (alto rendimiento)", "value": "o3"},
@@ -77,15 +63,14 @@ MODEL_OPTIONS = [
     {"label": "gpt-4o-mini", "value": "gpt-4o-mini"},
 ]
 
+DEFAULT_TEXT = get_communications_text_sample(get_communications_df(), settings.language)
+
 # ---------------------------------------------------------------------------
 # Dash App
 # ---------------------------------------------------------------------------
 
 app = dash.Dash(__name__, title="Abuse Analyzer GUI", external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-# ------------------------------------------------------------------
-# Sidebar (100 vh, scrollable)
-# ------------------------------------------------------------------
 sidebar = dbc.Card(
     [
         dbc.CardHeader(html.H5("Configuración")),
@@ -108,10 +93,11 @@ sidebar = dbc.Card(
                 dcc.Dropdown(
                     id="system-preset",
                     options=[
-                        {"label": "Neutro", "value": "neutro"},
-                        {"label": "Neutro (vigilante)", "value": "vigilante"},
-                        {"label": "Antecedentes previos", "value": "antecedentes"},
-                        {"label": "Antecedentes previos (contundente)", "value": "contundente"},
+                        {
+                            "label": PRESET_LABELS[key],
+                            "value": key
+                        }
+                        for key in PRESET_PROMPTS
                     ],
                     placeholder="Elegir preset…",
                     clearable=True,
@@ -133,9 +119,6 @@ sidebar = dbc.Card(
     className="shadow-sm",
 )
 
-# ---------------------------------------------------------------
-# Top navbar header (put above this block in your script)
-# ---------------------------------------------------------------
 header = dbc.Navbar(
     dbc.Container(
         dbc.NavbarBrand(
@@ -147,15 +130,12 @@ header = dbc.Navbar(
     color="primary",
     dark=True,
     sticky="top",
-    className="shadow-sm",   # subtle drop-shadow
+    className="shadow-sm",
 )
 
-# ---------------------------------------------------------------
-# Main layout
-# ---------------------------------------------------------------
 app.layout = html.Div(
     [
-        header,                      # full-width sticky header
+        header,
         dbc.Container(
             [
                 dbc.Row(
@@ -171,12 +151,12 @@ app.layout = html.Div(
                                         dbc.Label("Mensaje a analizar"),
                                         dcc.Textarea(
                                             id="user-input",
+                                            value=DEFAULT_TEXT,
                                             rows=16,
                                             style={"width": "100%"},
                                         ),
                                         html.Br(),
 
-                                        # Button on right, error on left
                                         html.Div(
                                             [
                                                 html.Span(
@@ -218,7 +198,7 @@ app.layout = html.Div(
                 ),
             ],
             fluid=True,
-            className="pt-4",   # space below navbar
+            className="pt-4",
         ),
     ]
 )
@@ -233,7 +213,6 @@ def toggle_temp(model):
     return model in NO_TEMPERATURE_MODELS
 
 
-# Autofill system prompt when preset dropdown changes
 @app.callback(
     Output("system-prompt", "value"),
     Input("system-preset", "value"),

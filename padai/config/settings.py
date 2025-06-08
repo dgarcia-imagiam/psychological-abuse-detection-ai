@@ -1,9 +1,10 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Literal
+from typing import Literal, List
 from pathlib import Path
 from pydantic import Field
 from padai.config.logging import LoggingSettings
 from padai.config.openai import OpenAISettings
+from padai.config.language import Language
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -12,6 +13,11 @@ class AppSettings(BaseSettings):
     name: str = "App"
     environment: Literal["dev", "staging", "prod"] = "dev"
     debug: bool = True
+
+    language: Language = Language.ES
+    available_languages: List[Language] = Field(
+        default_factory=lambda: list(Language)
+    )
 
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
     openai: OpenAISettings = Field(default_factory=OpenAISettings)

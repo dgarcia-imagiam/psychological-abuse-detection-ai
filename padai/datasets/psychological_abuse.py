@@ -3,6 +3,7 @@ import sqlite3
 import pandas as pd
 from padai.datasets.base import get_names_pool, get_random_name
 import re
+from padai.config.language import Language
 
 
 def _db_path() -> Path:
@@ -58,8 +59,8 @@ def get_communications_df() -> pd.DataFrame:
     return df
 
 
-def get_communications_text_sample(df: pd.DataFrame, language: str) -> str:
-    subset = df[df["language"] == language]
+def get_communications_text_sample(df: pd.DataFrame, language: Language) -> str:
+    subset = df[df["language"] == language.value]
     if subset.empty:
         raise ValueError(f"No rows with language = {language!r}")
 
