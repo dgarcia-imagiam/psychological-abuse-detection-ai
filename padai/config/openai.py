@@ -8,6 +8,7 @@ class ChatModelDefaults(BaseModel):
     temperature: Optional[float] = None
     max_tokens: Optional[int] = None
     top_p: Optional[float] = None
+    use_responses_api: Optional[bool] = None
 
     def as_kwargs(self) -> Dict[str, Any]:
         return self.model_dump(exclude_none=True)

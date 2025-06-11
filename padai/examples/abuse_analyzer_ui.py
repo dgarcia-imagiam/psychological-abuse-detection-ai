@@ -10,6 +10,7 @@ import openai
 from padai.config.settings import settings
 from padai.prompts.psychological_abuse import abuse_analyzer_prompts
 from padai.datasets.psychological_abuse import get_communications_df, get_communications_text_sample
+from typing import Dict, Any
 
 
 def build_chain(
@@ -26,9 +27,13 @@ def build_chain(
         ]
     )
 
-    llm_kwargs = {"model": model_name}
+    llm_kwargs: Dict[str, Any] = {"model": model_name}
+
     if temperature is not None:
         llm_kwargs["temperature"] = temperature
+
+    if model_name in {"o3-pro", }:
+        llm_kwargs["use_responses_api"] = True
 
     llm = ChatOpenAI(**llm_kwargs, api_key=settings.openai.api_key)
     parser = StrOutputParser()
@@ -36,7 +41,7 @@ def build_chain(
     return prompt | llm | parser
 
 
-NO_TEMPERATURE_MODELS = {"o3", "o3-mini", "o4-mini"}
+NO_TEMPERATURE_MODELS = {"o3-pro", "o3", "o3-mini", "o4-mini"}
 
 PRESET_PROMPTS = abuse_analyzer_prompts[settings.language]["system"]
 
@@ -52,7 +57,8 @@ DEFAULT_SYSTEM = PRESET_PROMPTS["neutral"]
 DEFAULT_HUMAN = abuse_analyzer_prompts[settings.language]["human"]["default"]
 
 MODEL_OPTIONS = [
-    {"label": "o3 (alto rendimiento)", "value": "o3"},
+    {"label": "o3-pro", "value": "o3-pro"},
+    {"label": "o3", "value": "o3"},
     {"label": "o3-mini", "value": "o3-mini"},
     {"label": "o4-mini", "value": "o4-mini"},
     {"label": "gpt-4.5-preview", "value": "gpt-4.5-preview"},
@@ -78,7 +84,7 @@ sidebar = dbc.Card(
             [
                 dbc.Label("Modelo"),
                 dcc.Dropdown(id="model", options=MODEL_OPTIONS,
-                             value="o3", clearable=False),
+                             value="o3-pro", clearable=False),
 
                 html.Hr(className="my-3"),
 
