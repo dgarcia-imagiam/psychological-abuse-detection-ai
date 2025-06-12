@@ -4,6 +4,7 @@ from pathlib import Path
 from pydantic import Field
 from padai.config.logging import LoggingSettings
 from padai.config.openai import OpenAISettings
+from padai.config.aws import BedrockSettings
 from padai.config.language import Language
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -21,6 +22,9 @@ class AppSettings(BaseSettings):
 
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
     openai: OpenAISettings = Field(default_factory=OpenAISettings)
+    bedrock: BedrockSettings = Field(default_factory=BedrockSettings)
+
+    default_chat_model: Literal["openai", "bedrock"] = "openai"
 
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",

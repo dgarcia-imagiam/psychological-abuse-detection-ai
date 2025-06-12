@@ -1,6 +1,6 @@
 import padai.config.bootstrap  # noqa: F401 always first import in main entry points
 
-from padai.llms.openai import get_default_chat_openai
+from padai.llms.base import get_default_chat_model
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from padai.datasets.psychological_abuse import get_communications_df, get_communications_text_sample
@@ -18,7 +18,7 @@ def build_chain():
             ("human", abuse_analyzer_prompts[settings.language]["human"]["default"]),
         ]
     )
-    llm = get_default_chat_openai()
+    llm = get_default_chat_model()
     parser = StrOutputParser()
 
     return prompt | llm | parser
