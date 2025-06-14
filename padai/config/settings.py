@@ -1,7 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Literal, List
 from pathlib import Path
-from pydantic import Field
+from pydantic import Field, SecretStr
 from padai.config.logging import LoggingSettings
 from padai.config.openai import OpenAISettings
 from padai.config.aws import BedrockSettings
@@ -19,6 +19,8 @@ class AppSettings(BaseSettings):
     available_languages: List[Language] = Field(
         default_factory=lambda: list(Language)
     )
+
+    secret: SecretStr
 
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
     openai: OpenAISettings = Field(default_factory=OpenAISettings)
@@ -39,3 +41,4 @@ class AppSettings(BaseSettings):
 
 
 settings = AppSettings()
+

@@ -1,9 +1,11 @@
 from pathlib import Path
 import sqlite3
 import pandas as pd
-from padai.datasets.base import get_names_pool, get_random_name
+from padai.datasets.base import get_names_pool, get_random_name, NameFrequencyCache, build_name_token_dict_many
 import re
 from padai.config.language import Language
+from typing import Dict, Iterable
+from padai.utils.text import substitute_placeholders
 
 
 def _db_path() -> Path:
@@ -16,46 +18,66 @@ def get_raw_communications_df() -> pd.DataFrame:
         raise FileNotFoundError(f"SQLite file not found: {db_file}")
 
     with sqlite3.connect(db_file) as conn:
-        df = pd.read_sql_query("SELECT * FROM communications", conn, parse_dates=["created_at"])
+        df = pd.read_sql_query("SELECT * FROM communications", conn, index_col="id", parse_dates=["created_at"])
 
     df["text"] = df["text"].astype("string")
+    df["context"] = df["context"].astype("string")
     df["language"] = df["language"].astype("string")
     df["source_id"] = df["source_id"].astype("string")
 
     df["translation_of"] = df["translation_of"].astype("Int64")
 
-    assert pd.api.types.is_integer_dtype(df["id"])
+    assert pd.api.types.is_integer_dtype(df.index)
     assert pd.api.types.is_string_dtype(df["text"])
+    assert pd.api.types.is_string_dtype(df["context"])
     assert pd.api.types.is_string_dtype(df["language"])
     assert pd.api.types.is_datetime64_any_dtype(df["created_at"])
 
     return df
 
 
-PLACEHOLDER_RE = re.compile(r"\{f_name}|\{m_name}")
-
-
 def get_communications_df() -> pd.DataFrame:
     df = get_raw_communications_df()
 
-    names_pool = get_names_pool()
+    # 1) Names pools:   {"es": es_names_df, "en": en_names_df, …}
+    names_pool: Dict[str, pd.DataFrame] = get_names_pool()
 
-    caches = {lang: {} for lang in names_pool}
+    # 2) Per-language cache – either your real object or a plain dict
+    caches: Dict[str, NameFrequencyCache] = {
+        lang: {} for lang in names_pool
+    }
 
-    def _replace(row: pd.Series) -> str:
+    # 3) Row-wise transformation ------------------------------------------------
+    def _process_row(row: pd.Series) -> pd.Series:
         lang = row["language"]
         names_df = names_pool[lang]
-        cache = caches.setdefault(lang, {})
+        cache = caches[lang]
 
-        female = get_random_name(names_df, "F", cache)
-        male = get_random_name(names_df, "M", cache)
+        # Collect all strings in which placeholders might exist
+        texts: Iterable[str] = (
+            row["text"],
+            row["context"] if pd.notna(row["context"]) else "",
+        )
 
-        def _sub(match: re.Match) -> str:
-            return female if match.group(0) == "{f_name}" else male
+        # Build / extend the mapping for *this* row only
+        mapping = build_name_token_dict_many(
+            texts=texts,
+            df=names_df,
+            cache=cache,
+        )
 
-        return PLACEHOLDER_RE.sub(_sub, row["text"])
+        # Substitute in both columns
+        row["text"] = substitute_placeholders(row["text"], mapping)
+        if pd.notna(row["context"]):
+            row["context"] = substitute_placeholders(row["context"], mapping)
 
-    df["text"] = df.apply(_replace, axis=1)
+        return row
+
+    # Apply the transformation
+    df = df.apply(_process_row, axis=1)
+
+    df = df[["text", "context", "language", "source_id", "translation_of", "created_at"]]
+
     return df
 
 
