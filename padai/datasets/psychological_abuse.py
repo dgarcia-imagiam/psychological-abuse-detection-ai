@@ -2,9 +2,8 @@ from pathlib import Path
 import sqlite3
 import pandas as pd
 from padai.datasets.base import get_names_pool, get_random_name, NameFrequencyCache, build_name_token_dict_many
-import re
 from padai.config.language import Language
-from typing import Dict, Iterable
+from typing import Dict, Tuple, Iterable, Optional
 from padai.utils.text import substitute_placeholders
 
 
@@ -81,9 +80,32 @@ def get_communications_df() -> pd.DataFrame:
     return df
 
 
-def get_communications_text_sample(df: pd.DataFrame, language: Language) -> str:
-    subset = df[df["language"] == language.value]
-    if subset.empty:
-        raise ValueError(f"No rows with language = {language!r}")
+def get_communications_sample(
+    df: pd.DataFrame,
+    *,
+    language: Optional[Language] = None,
+    id_: Optional[int] = None,
+) -> Tuple[str, str]:
 
-    return subset["text"].iat[0]
+    subset = df
+    if language is not None:
+        subset = subset[subset["language"] == language.value]
+
+    if subset.empty:
+        raise ValueError(
+            "No rows match the requested criteria "
+            f"(language={language!r}, id={id_!r})"
+        )
+
+    if id_ is not None:
+        try:
+            row = subset.loc[id_]
+        except KeyError as exc:
+            raise ValueError(
+                f"No row with id={id_!r} "
+                f"in the dataframe (after language filter)."
+            ) from exc
+    else:
+        row = subset.iloc[0]
+
+    return row["text"], row["context"]

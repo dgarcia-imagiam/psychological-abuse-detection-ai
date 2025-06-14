@@ -9,7 +9,7 @@ from langchain_core.output_parsers import StrOutputParser
 import openai
 from padai.config.settings import settings
 from padai.prompts.psychological_abuse import abuse_analyzer_prompts
-from padai.datasets.psychological_abuse import get_communications_df, get_communications_text_sample
+from padai.datasets.psychological_abuse import get_communications_df, get_communications_sample
 from typing import Dict, Any
 
 
@@ -69,7 +69,7 @@ MODEL_OPTIONS = [
     {"label": "gpt-4o-mini", "value": "gpt-4o-mini"},
 ]
 
-DEFAULT_TEXT = get_communications_text_sample(get_communications_df(), settings.language)
+DEFAULT_TEXT, _ = get_communications_sample(get_communications_df(), language=settings.language)
 
 # ---------------------------------------------------------------------------
 # Dash App
