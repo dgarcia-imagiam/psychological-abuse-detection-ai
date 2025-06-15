@@ -6,6 +6,8 @@ from padai.config.logging import LoggingSettings
 from padai.config.openai import OpenAISettings
 from padai.config.aws import BedrockSettings
 from padai.config.language import Language
+from padai.llms.types import ChatEngine
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -26,7 +28,7 @@ class AppSettings(BaseSettings):
     openai: OpenAISettings = Field(default_factory=OpenAISettings)
     bedrock: BedrockSettings = Field(default_factory=BedrockSettings)
 
-    default_chat_model: Literal["openai", "bedrock"] = "openai"
+    default_chat_model: ChatEngine = "openai"
 
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",
