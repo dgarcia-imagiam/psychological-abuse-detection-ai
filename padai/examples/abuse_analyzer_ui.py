@@ -6,12 +6,13 @@ import dash_bootstrap_components as dbc
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from padai.config.settings import settings
-from padai.prompts.psychological_abuse import abuse_analyzer_prompts
+from padai.prompts.psychological_abuse import abuse_analyzer_prompts, abuse_analyzer_prompts_with_context
 from padai.datasets.psychological_abuse import get_communications_df, get_communications_sample
 from typing import Dict, Any, List, Set
 from padai.llms.base import ChatModelDescription, get_chat_model
 from pydantic import ConfigDict, Field
 import logging
+from padai.chains.abuse_analyzer import get_abuse_analyzer_params
 
 logger = logging.getLogger(__name__)
 
@@ -76,8 +77,6 @@ def build_chain(
     return prompt | llm | parser
 
 
-PRESET_PROMPTS = abuse_analyzer_prompts[settings.language]["system"]
-
 PRESET_LABELS = {
     "neutral": "Neutro",
     "vigilant": "Vigilante",
@@ -85,11 +84,24 @@ PRESET_LABELS = {
     "extreme_vigilant_with_history": "Muy vigilante (con antecedentes)",
 }
 
-DEFAULT_SYSTEM = PRESET_PROMPTS["neutral"]
+PRESET_PROMPTS_NO_CTX = abuse_analyzer_prompts[settings.language]["system"]
+PRESET_PROMPTS_CTX = abuse_analyzer_prompts_with_context[settings.language]["system"]
 
-DEFAULT_HUMAN = abuse_analyzer_prompts[settings.language]["human"]["default"]
+DEFAULT_SYSTEM_NO_CTX = PRESET_PROMPTS_NO_CTX["neutral"]
+DEFAULT_SYSTEM_CTX = PRESET_PROMPTS_CTX["neutral"]
 
-DEFAULT_TEXT, _ = get_communications_sample(get_communications_df(), language=settings.language)
+DEFAULT_HUMAN_NO_CTX = abuse_analyzer_prompts[settings.language]["human"]["default"]
+DEFAULT_HUMAN_CTX = abuse_analyzer_prompts_with_context[settings.language]["human"]["default"]
+
+DEFAULT_TEXT, DEFAULT_CONTEXT = get_communications_sample(get_communications_df(), language=settings.language)
+
+
+def _get_clean_context(context: str):
+    return (context or "").strip()
+
+
+def _get_context_tab(context: str):
+    return "ctx" if _get_clean_context(context) else "no_ctx"
 
 
 # ---------------------------------------------------------------------------
@@ -97,54 +109,6 @@ DEFAULT_TEXT, _ = get_communications_sample(get_communications_df(), language=se
 # ---------------------------------------------------------------------------
 
 app = dash.Dash(__name__, title="Abuse Analyzer GUI", external_stylesheets=[dbc.themes.BOOTSTRAP])
-
-sidebar = dbc.Card(
-    [
-        dbc.CardHeader(html.H5("Configuración")),
-        dbc.CardBody(
-            [
-                dbc.Label("Modelo"),
-                dcc.Dropdown(id="model", options=[{"label": m.label, "value": m.id} for m in models],
-                             value=models[0].id, clearable=False, maxHeight=600),
-
-                html.Hr(className="my-3"),
-
-                dbc.Label("Temperature"),
-                dcc.Slider(id="temperature", min=0, max=1,
-                           step=0.05, value=0.0,
-                           marks={0: "0", 0.5: "0.5", 1: "1"}),
-
-                html.Hr(className="my-3"),
-
-                dbc.Label("Preset de System prompt"),
-                dcc.Dropdown(
-                    id="system-preset",
-                    options=[
-                        {
-                            "label": PRESET_LABELS[key],
-                            "value": key
-                        }
-                        for key in PRESET_PROMPTS
-                    ],
-                    placeholder="Elegir preset…",
-                    clearable=True,
-                ),
-                html.Br(),
-
-                dbc.Label("System prompt"),
-                dcc.Textarea(id="system-prompt", value=DEFAULT_SYSTEM, rows=12, style={"width": "100%"}),
-
-                html.Br(),
-
-                dbc.Label("Human prompt"),
-
-                dcc.Textarea(id="human-prompt", value=DEFAULT_HUMAN, rows=8, style={"width": "100%"}),
-            ]
-        ),
-    ],
-    style={"height": "100vh", "overflowY": "auto"},
-    className="shadow-sm",
-)
 
 header = dbc.Navbar(
     dbc.Container(
@@ -160,70 +124,165 @@ header = dbc.Navbar(
     className="shadow-sm",
 )
 
+config_section = [
+    dbc.Label("Modelo", html_for="model"),
+    dcc.Dropdown(
+        id="model",
+        options=[{"label": m.label, "value": m.id} for m in models],
+        value=models[0].id,
+        clearable=False,
+        maxHeight=600,
+    ),
+
+    html.Hr(className="my-3"),
+
+    dbc.Label("Temperature", html_for="temperature"),
+    dcc.Slider(
+        id="temperature",
+        min=0,
+        max=1,
+        step=0.05,
+        value=0.0,
+        marks={0: "0", 0.5: "0.5", 1: "1"},
+    ),
+
+    html.Hr(className="my-3"),
+
+    dbc.Label("Preset de System prompt", html_for="system-preset"),
+    dcc.Dropdown(
+        id="system-preset",
+        options=[{"label": PRESET_LABELS[k], "value": k} for k in PRESET_PROMPTS_NO_CTX],
+        placeholder="Elegir preset…",
+        clearable=True,
+    ),
+
+    dbc.Tabs(
+        id="prompt-tabs",
+        active_tab=_get_context_tab(DEFAULT_CONTEXT),
+        className="mt-3",
+        children=[
+            dbc.Tab(
+                label="Sin contexto",
+                tab_id="no_ctx",
+                children=[
+                    dbc.Label("System prompt",
+                              html_for="system-prompt-no-ctx"),
+                    dcc.Textarea(
+                        id="system-prompt-no-ctx",
+                        value=DEFAULT_SYSTEM_NO_CTX,
+                        rows=10,
+                        style={"width": "100%"},
+                    ),
+                    html.Br(),
+
+                    dbc.Label("Human prompt",
+                              html_for="human-prompt-no-ctx"),
+                    dcc.Textarea(
+                        id="human-prompt-no-ctx",
+                        value=DEFAULT_HUMAN_NO_CTX,
+                        rows=6,
+                        style={"width": "100%"},
+                    ),
+                ],
+            ),
+            dbc.Tab(
+                label="Con contexto",
+                tab_id="ctx",
+                children=[
+                    dbc.Label("System prompt",
+                              html_for="system-prompt-ctx"),
+                    dcc.Textarea(
+                        id="system-prompt-ctx",
+                        value=DEFAULT_SYSTEM_CTX,
+                        rows=20,
+                        style={"width": "100%"},
+                    ),
+                    html.Br(),
+
+                    dbc.Label("Human prompt",
+                              html_for="human-prompt-ctx"),
+                    dcc.Textarea(
+                        id="human-prompt-ctx",
+                        value=DEFAULT_HUMAN_CTX,
+                        rows=9,
+                        style={"width": "100%"},
+                    ),
+                ],
+            ),
+        ],
+    ),
+]
+
+sidebar = dbc.Card(
+    [
+        dbc.CardHeader(html.H5("Configuración")),
+        dbc.CardBody(config_section)
+    ],
+    className="shadow-sm",
+)
+
+main_cards = html.Div(
+    [
+        dbc.Card(
+            [
+                dbc.CardHeader(html.H5("Mensaje a analizar y Contexto")),
+                dbc.CardBody(
+                    [
+                        dcc.Textarea(
+                            id="user-input",
+                            value=DEFAULT_TEXT,
+                            rows=14,
+                            style={"width": "100%"},
+                        ),
+                        html.Br(),
+
+                        dbc.Label("Contexto (opcional)", html_for="user-context"),
+                        dcc.Textarea(
+                            id="user-context",
+                            value=DEFAULT_CONTEXT,
+                            rows=6,
+                            style={"width": "100%"},
+                        ),
+                        html.Br(),
+
+                        html.Div(
+                            [
+                                html.Span(id="error",
+                                          className="text-danger fw-semibold me-2"),
+                                dbc.Button("Analizar", id="analyze-btn",
+                                           color="primary", className="ms-auto"),
+                            ],
+                            className="d-flex align-items-center",
+                        ),
+                    ],
+                    className="p-3",
+                ),
+            ],
+            className="shadow-sm mb-4",
+        ),
+
+        dbc.Card(
+            [
+                dbc.CardHeader(html.H5("Análisis generado")),
+                dbc.CardBody(dcc.Markdown(id="output-md"), className="p-3"),
+            ],
+            style={"minHeight": "35vh", "overflowY": "auto"},
+            className="shadow-sm",
+        ),
+    ],
+)
+
 app.layout = html.Div(
     [
         header,
         dbc.Container(
-            [
-                dbc.Row(
-                    [
-                        # --- Sidebar column (left) ------------------------
-                        dbc.Col(sidebar, width=3),
-
-                        # --- Main column (right) -------------------------
-                        dbc.Col(
-                            [
-                                dbc.Col(          # centred inner column
-                                    [
-                                        dbc.Label("Mensaje a analizar"),
-                                        dcc.Textarea(
-                                            id="user-input",
-                                            value=DEFAULT_TEXT,
-                                            rows=16,
-                                            style={"width": "100%"},
-                                        ),
-                                        html.Br(),
-
-                                        html.Div(
-                                            [
-                                                html.Span(
-                                                    id="error",
-                                                    className="text-danger fw-semibold me-2",
-                                                ),
-                                                dbc.Button(
-                                                    "Analizar",
-                                                    id="analyze-btn",
-                                                    color="primary",
-                                                    className="ms-auto",
-                                                ),
-                                            ],
-                                            className="d-flex align-items-center",
-                                        ),
-                                        html.Br(),
-
-                                        dbc.Label("Análisis generado"),
-                                        dbc.Card(
-                                            dbc.CardBody(
-                                                dcc.Markdown(id="output-md"),
-                                                className="p-3",
-                                            ),
-                                            style={
-                                                "minHeight": "260px",
-                                                "overflowY": "auto",
-                                            },
-                                            className="shadow-sm",
-                                        ),
-                                    ],
-                                    width=12, md=10, lg=8, xl=7,
-                                    className="mx-auto",
-                                ),
-                            ],
-                            width=9,
-                        ),
-                    ],
-                    className="gy-4 align-items-start",
-                ),
-            ],
+            dbc.Row(
+                [
+                    dbc.Col(sidebar, width=3),
+                    dbc.Col(main_cards, width=9, md=9, lg=9),
+                ],
+                className="gy-4",
+            ),
             fluid=True,
             className="pt-4",
         ),
@@ -247,14 +306,38 @@ def toggle_temp(model_id):
 
 
 @app.callback(
-    Output("system-prompt", "value"),
+    Output("prompt-tabs", "active_tab"),
+    Input("user-context", "value"),
+    State("prompt-tabs", "active_tab"),
+    prevent_initial_call=True,
+)
+def flip_tab_on_context_change(user_ctx, current_tab):
+    desired_tab = _get_context_tab(user_ctx)
+
+    if desired_tab == current_tab:
+        return no_update
+
+    return desired_tab
+
+
+@app.callback(
+    [
+        Output("system-prompt-no-ctx", "value"),
+        Output("system-prompt-ctx", "value")
+    ],
     Input("system-preset", "value"),
     prevent_initial_call=True,
 )
-def _apply_preset(preset):
-    if preset and preset in PRESET_PROMPTS:
-        return PRESET_PROMPTS[preset]
-    return no_update
+def apply_preset(preset):
+    if not preset:
+        return no_update, no_update
+
+    try:
+        sys_no_ctx = PRESET_PROMPTS_NO_CTX[preset]
+        sys_ctx = PRESET_PROMPTS_CTX[preset]
+        return sys_no_ctx, sys_ctx
+    except KeyError:
+        return no_update, no_update
 
 
 @app.callback(
@@ -263,13 +346,16 @@ def _apply_preset(preset):
     Input("analyze-btn", "n_clicks"),
     State("model", "value"),
     State("temperature", "value"),
-    State("system-prompt", "value"),
-    State("human-prompt", "value"),
+    State("system-prompt-no-ctx", "value"),
+    State("human-prompt-no-ctx", "value"),
+    State("system-prompt-ctx", "value"),
+    State("human-prompt-ctx", "value"),
     State("user-input", "value"),
+    State("user-context", "value"),
     prevent_initial_call=True,
 )
-def run_analysis(n_clicks, model_id, temperature, system_prompt, human_prompt, user_msg):
-    if not user_msg or not user_msg.strip():
+def run_analysis(n_clicks, model_id, temperature, system_prompt_no_ctx, human_prompt_no_ctx, system_prompt_ctx, human_prompt_ctx, user_input, user_context):
+    if not user_input or not user_input.strip():
         return no_update, "Escribe un mensaje y pulsa Analizar."
 
     temp = None if model_id in NO_TEMP_MODELS else float(temperature or 0.0)
@@ -281,6 +367,16 @@ def run_analysis(n_clicks, model_id, temperature, system_prompt, human_prompt, u
         model_description, temp
     )
 
+    user_context = _get_clean_context(user_context)
+    params: Dict[str, str] = get_abuse_analyzer_params(user_input, user_context=user_context)
+
+    if user_context:
+        system_prompt = system_prompt_ctx
+        human_prompt = human_prompt_ctx
+    else:
+        system_prompt = system_prompt_no_ctx
+        human_prompt = human_prompt_no_ctx
+
     chain = build_chain(
         model_description=model_description,
         system_prompt=system_prompt,
@@ -288,7 +384,7 @@ def run_analysis(n_clicks, model_id, temperature, system_prompt, human_prompt, u
         temperature=temp,
     )
     try:
-        result: str = chain.invoke({"user_input": user_msg})
+        result: str = chain.invoke(params)
     except Exception as exc:  # fallback
         return "", f"⚠️ Error inesperado: {exc}"
 
