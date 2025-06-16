@@ -1,5 +1,6 @@
 import re
 from typing import Dict
+import textwrap
 
 
 def substitute_placeholders(text: str, mapping: Dict[str, str]) -> str:
@@ -43,3 +44,8 @@ def substitute_placeholders(text: str, mapping: Dict[str, str]) -> str:
     # `m.group(0)` is the exact key found; look it up in the mapping.
     return pattern.sub(lambda m: mapping[m.group(0)], text)
 
+
+def make_label(text: str, width: int = 40) -> str:
+    """Collapse whitespace and shorten to `width` chars with …"""
+    single_line = " ".join(text.split())        # drop \n, multiple spaces ⇢ single space
+    return textwrap.shorten(single_line, width=width, placeholder="…")

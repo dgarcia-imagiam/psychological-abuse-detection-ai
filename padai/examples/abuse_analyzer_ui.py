@@ -13,6 +13,7 @@ from padai.llms.base import ChatModelDescription, get_chat_model
 from pydantic import ConfigDict, Field
 import logging
 from padai.chains.abuse_analyzer import get_abuse_analyzer_params
+from padai.utils.text import make_label
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +94,8 @@ DEFAULT_SYSTEM_CTX = PRESET_PROMPTS_CTX["neutral"]
 DEFAULT_HUMAN_NO_CTX = abuse_analyzer_prompts[settings.language]["human"]["default"]
 DEFAULT_HUMAN_CTX = abuse_analyzer_prompts_with_context[settings.language]["human"]["default"]
 
-DEFAULT_TEXT, DEFAULT_CONTEXT = get_communications_sample(get_communications_df(), language=settings.language)
+PREDEFINED_MESSAGES = get_communications_df()
+DEFAULT_TEXT, DEFAULT_CONTEXT = get_communications_sample(PREDEFINED_MESSAGES, language=settings.language)
 
 
 def _get_clean_context(context: str):
@@ -102,6 +104,18 @@ def _get_clean_context(context: str):
 
 def _get_context_tab(context: str):
     return "ctx" if _get_clean_context(context) else "no_ctx"
+
+
+def _get_predefined_options():
+    df = PREDEFINED_MESSAGES[PREDEFINED_MESSAGES["language"] == settings.language.value]
+
+    return [
+        {
+            "label": make_label(row["text"], width=200),
+            "value": idx
+        }
+        for idx, row in df.iterrows()
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -120,7 +134,7 @@ header = dbc.Navbar(
     ),
     color="primary",
     dark=True,
-    sticky="top",
+    # sticky="top",
     className="shadow-sm",
 )
 
@@ -172,8 +186,8 @@ config_section = [
                         value=DEFAULT_SYSTEM_NO_CTX,
                         rows=10,
                         style={"width": "100%"},
+                        className="mb-3",
                     ),
-                    html.Br(),
 
                     dbc.Label("Human prompt",
                               html_for="human-prompt-no-ctx"),
@@ -196,8 +210,8 @@ config_section = [
                         value=DEFAULT_SYSTEM_CTX,
                         rows=20,
                         style={"width": "100%"},
+                        className="mb-3",
                     ),
-                    html.Br(),
 
                     dbc.Label("Human prompt",
                               html_for="human-prompt-ctx"),
@@ -228,13 +242,22 @@ main_cards = html.Div(
                 dbc.CardHeader(html.H5("Mensaje a analizar y Contexto")),
                 dbc.CardBody(
                     [
+                        dbc.Label("Mensajes predefinidos", html_for="predefined-message"),
+                        dcc.Dropdown(
+                            id="predefined-message",
+                            options=_get_predefined_options(),
+                            placeholder="Elegir mensaje…",
+                            clearable=True,
+                            className="mb-3"
+                        ),
+
                         dcc.Textarea(
                             id="user-input",
                             value=DEFAULT_TEXT,
                             rows=14,
                             style={"width": "100%"},
+                            className="mb-3",
                         ),
-                        html.Br(),
 
                         dbc.Label("Contexto (opcional)", html_for="user-context"),
                         dcc.Textarea(
@@ -242,8 +265,8 @@ main_cards = html.Div(
                             value=DEFAULT_CONTEXT,
                             rows=6,
                             style={"width": "100%"},
+                            className="mb-3",
                         ),
-                        html.Br(),
 
                         html.Div(
                             [
@@ -318,6 +341,26 @@ def flip_tab_on_context_change(user_ctx, current_tab):
         return no_update
 
     return desired_tab
+
+
+@app.callback(
+    [
+        Output("user-input", "value"),
+        Output("user-context", "value")
+    ],
+    Input("predefined-message", "value"),
+    prevent_initial_call=True,
+)
+def change_predefined_message(predefined):
+    if not predefined:
+        return no_update, no_update
+
+    try:
+        user_input = PREDEFINED_MESSAGES.at[predefined, "text"]
+        user_context = PREDEFINED_MESSAGES.at[predefined, "context"] or ""
+        return user_input, user_context
+    except Exception:
+        return no_update, no_update
 
 
 @app.callback(
