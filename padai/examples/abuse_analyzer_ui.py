@@ -43,6 +43,11 @@ models: List[AbuseChatModelDescription] = [
     AbuseChatModelDescription(id="nova-lite",       label="AWS BedRock: Nova Lite",     engine="bedrock",   params={"model": "amazon.nova-lite-v1:0", "region_name": "us-east-1"}),
     AbuseChatModelDescription(id="nova-micro",      label="AWS BedRock: Nova Micro",    engine="bedrock",   params={"model": "amazon.nova-micro-v1:0", "region_name": "us-east-1"}),
     AbuseChatModelDescription(id="deep-seek",       label="AWS BedRock: DeepSeek",      engine="bedrock",   params={"model": "us.deepseek.r1-v1:0", "region_name": "us-west-2"}),
+
+    AbuseChatModelDescription(id="gemini-2.5-pro-preview",      label="Google: gemini-2.5-pro-preview",     engine="google",    params={"model": "gemini-2.5-pro-preview-06-05"}),
+    AbuseChatModelDescription(id="gemini-2.5-flash-preview",    label="Google: gemini-2.5-flash-preview",   engine="google",    params={"model": "gemini-2.5-flash-preview-05-20"}),
+    AbuseChatModelDescription(id="gemini-2.0-flash",            label="Google: gemini-2.0-flash",           engine="google",    params={"model": "gemini-2.0-flash"}),
+    AbuseChatModelDescription(id="gemini-2.0-flash-lite",       label="Google: gemini-2.0-flash-lite",      engine="google",    params={"model": "gemini-2.0-flash-lite"}),
 ]
 
 models_registry: Dict[str, AbuseChatModelDescription] = {

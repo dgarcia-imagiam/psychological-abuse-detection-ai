@@ -5,6 +5,7 @@ from pydantic import Field, SecretStr
 from padai.config.logging import LoggingSettings
 from padai.config.openai import OpenAISettings
 from padai.config.aws import BedrockSettings
+from padai.config.google import GoogleSettings
 from padai.config.language import Language
 from padai.llms.types import ChatEngine
 
@@ -27,6 +28,7 @@ class AppSettings(BaseSettings):
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
     openai: OpenAISettings = Field(default_factory=OpenAISettings)
     bedrock: BedrockSettings = Field(default_factory=BedrockSettings)
+    google: GoogleSettings = Field(default_factory=GoogleSettings)
 
     default_chat_model: ChatEngine = "openai"
 

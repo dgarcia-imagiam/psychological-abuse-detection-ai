@@ -1,4 +1,4 @@
 from typing import Literal
 
 
-ChatEngine = Literal["openai", "bedrock"]
+ChatEngine = Literal["openai", "bedrock", "google"]
