@@ -49,3 +49,7 @@ def make_label(text: str, width: int = 40) -> str:
     """Collapse whitespace and shorten to `width` chars with …"""
     single_line = " ".join(text.split())        # drop \n, multiple spaces ⇢ single space
     return textwrap.shorten(single_line, width=width, placeholder="…")
+
+
+def strip_text(text: str | None):
+    return (text or "").strip()

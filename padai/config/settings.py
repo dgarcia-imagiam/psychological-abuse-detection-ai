@@ -7,7 +7,7 @@ from padai.config.openai import OpenAISettings
 from padai.config.aws import BedrockSettings
 from padai.config.google import GoogleSettings
 from padai.config.language import Language
-from padai.llms.types import ChatEngine
+from padai.llms.engine import ChatEngine
 from slugify import slugify
 
 

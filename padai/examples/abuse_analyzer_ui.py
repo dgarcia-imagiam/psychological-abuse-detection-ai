@@ -8,56 +8,19 @@ from langchain_core.output_parsers import StrOutputParser
 from padai.config.settings import settings
 from padai.prompts.psychological_abuse import abuse_analyzer_prompts, abuse_analyzer_prompts_with_context
 from padai.datasets.psychological_abuse import get_communications_df, get_communications_sample
-from typing import Dict, Any, List, Set
-from padai.llms.base import ChatModelDescription, get_chat_model
-from pydantic import ConfigDict, Field
+from typing import Dict, Any
+from padai.llms.base import ChatModelDescriptionEx, get_chat_model
+from padai.llms.available import default_available_models_registry, default_available_models
 import logging
 from padai.chains.abuse_analyzer import get_abuse_analyzer_params
-from padai.utils.text import make_label
+from padai.utils.text import make_label, strip_text
 
 logger = logging.getLogger(__name__)
 
 
-class AbuseChatModelDescription(ChatModelDescription):
-    id: str
-    label: str
-    tags: Set[str] = Field(default_factory=set)
-
-    model_config = ConfigDict(extra="forbid")
-
-
-models: List[AbuseChatModelDescription] = [
-    AbuseChatModelDescription(id="o3-pro",          label="OpenAI: o3-pro",             engine="openai",    params={"model": "o3-pro"},             tags={"no-temperature", "use-responses-api", }),
-    AbuseChatModelDescription(id="o3",              label="OpenAI: o3",                 engine="openai",    params={"model": "o3"},                 tags={"no-temperature", }),
-    AbuseChatModelDescription(id="o3-mini",         label="OpenAI: o3-mini",            engine="openai",    params={"model": "o3-mini"},            tags={"no-temperature", }),
-    AbuseChatModelDescription(id="o4-mini",         label="OpenAI: o4-mini",            engine="openai",    params={"model": "o4-mini"},            tags={"no-temperature", }),
-    AbuseChatModelDescription(id="gpt-4.5-preview", label="OpenAI: gpt-4.5-preview",    engine="openai",    params={"model": "gpt-4.5-preview"}),
-    AbuseChatModelDescription(id="gpt-4.1",         label="OpenAI: gpt-4.1",            engine="openai",    params={"model": "gpt-4.1"}),
-    AbuseChatModelDescription(id="gpt-4.1-mini",    label="OpenAI: gpt-4.1-mini",       engine="openai",    params={"model": "gpt-4.1-mini"}),
-    AbuseChatModelDescription(id="gpt-4.1-nano",    label="OpenAI: gpt-4.1-nano",       engine="openai",    params={"model": "gpt-4.1-nano"}),
-    AbuseChatModelDescription(id="gpt-4o",          label="OpenAI: gpt-4o",             engine="openai",    params={"model": "gpt-4o"}),
-    AbuseChatModelDescription(id="gpt-4o-mini",     label="OpenAI: gpt-4o-mini",        engine="openai",    params={"model": "gpt-4o-mini"}),
-
-    AbuseChatModelDescription(id="nova-premier",    label="AWS BedRock: Nova Premier",  engine="bedrock",   params={"model": "us.amazon.nova-premier-v1:0", "region_name": "us-east-1"}),
-    AbuseChatModelDescription(id="nova-pro",        label="AWS BedRock: Nova Pro",      engine="bedrock",   params={"model": "amazon.nova-pro-v1:0", "region_name": "us-east-1"}),
-    AbuseChatModelDescription(id="nova-lite",       label="AWS BedRock: Nova Lite",     engine="bedrock",   params={"model": "amazon.nova-lite-v1:0", "region_name": "us-east-1"}),
-    AbuseChatModelDescription(id="nova-micro",      label="AWS BedRock: Nova Micro",    engine="bedrock",   params={"model": "amazon.nova-micro-v1:0", "region_name": "us-east-1"}),
-    AbuseChatModelDescription(id="deep-seek",       label="AWS BedRock: DeepSeek",      engine="bedrock",   params={"model": "us.deepseek.r1-v1:0", "region_name": "us-west-2"}),
-
-    AbuseChatModelDescription(id="gemini-2.5-pro-preview",      label="Google: gemini-2.5-pro-preview",     engine="google",    params={"model": "gemini-2.5-pro-preview-06-05"}),
-    AbuseChatModelDescription(id="gemini-2.5-flash-preview",    label="Google: gemini-2.5-flash-preview",   engine="google",    params={"model": "gemini-2.5-flash-preview-05-20"}),
-    AbuseChatModelDescription(id="gemini-2.0-flash",            label="Google: gemini-2.0-flash",           engine="google",    params={"model": "gemini-2.0-flash"}),
-    AbuseChatModelDescription(id="gemini-2.0-flash-lite",       label="Google: gemini-2.0-flash-lite",      engine="google",    params={"model": "gemini-2.0-flash-lite"}),
-]
-
-models_registry: Dict[str, AbuseChatModelDescription] = {
-    m.id: m for m in models
-}
-
-
 def build_chain(
     *,
-    model_description: AbuseChatModelDescription,
+    model_description: ChatModelDescriptionEx,
     system_prompt: str,
     human_prompt: str,
     temperature: float | None,
@@ -73,9 +36,6 @@ def build_chain(
 
     if "no-temperature" not in model_description.tags:
         params["temperature"] = temperature
-
-    if "use-responses-api" in model_description.tags:
-        params["use_responses_api"] = True
 
     llm = get_chat_model(model_description.engine, params)
     parser = StrOutputParser()
@@ -103,12 +63,8 @@ PREDEFINED_MESSAGES = get_communications_df()
 DEFAULT_TEXT, DEFAULT_CONTEXT = get_communications_sample(PREDEFINED_MESSAGES, language=settings.language)
 
 
-def _get_clean_context(context: str):
-    return (context or "").strip()
-
-
 def _get_context_tab(context: str):
-    return "ctx" if _get_clean_context(context) else "no_ctx"
+    return "ctx" if strip_text(context) else "no_ctx"
 
 
 def _get_predefined_options():
@@ -147,8 +103,8 @@ config_section = [
     dbc.Label("Modelo", html_for="model"),
     dcc.Dropdown(
         id="model",
-        options=[{"label": m.label, "value": m.id} for m in models],
-        value=models[0].id,
+        options=[{"label": m.label, "value": m.id} for m in default_available_models],
+        value=default_available_models[0].id,
         clearable=False,
         maxHeight=600,
     ),
@@ -322,7 +278,7 @@ app.layout = html.Div(
 # Callbacks
 # ---------------------------------------------------------------------------
 
-NO_TEMP_MODELS = {m.id for m in models if "no-temperature" in m.tags}
+NO_TEMP_MODELS = {m.id for m in default_available_models if "no-temperature" in m.tags}
 
 
 @app.callback(Output("temperature", "disabled"), Input("model", "value"))
@@ -408,14 +364,14 @@ def run_analysis(n_clicks, model_id, temperature, system_prompt_no_ctx, human_pr
 
     temp = None if model_id in NO_TEMP_MODELS else float(temperature or 0.0)
 
-    model_description = models_registry[model_id]
+    model_description = default_available_models_registry[model_id]
 
     logger.info(
         "run_analysis: model_description=%s temperature=%s",
         model_description, temp
     )
 
-    user_context = _get_clean_context(user_context)
+    user_context = strip_text(user_context)
     params: Dict[str, str] = get_abuse_analyzer_params(user_input, user_context=user_context)
 
     if user_context:

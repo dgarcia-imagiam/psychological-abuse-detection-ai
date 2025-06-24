@@ -2,9 +2,9 @@ from padai.config.settings import settings
 from padai.llms.aws import get_default_chat_bedrock, get_chat_bedrock
 from padai.llms.openai import get_default_chat_openai, get_chat_openai
 from padai.llms.google import get_default_chat_google, get_chat_google
-from typing import Dict, Any, Callable
-from pydantic import BaseModel, ConfigDict
-from padai.llms.types import ChatEngine
+from typing import Dict, Any, Callable, Set
+from pydantic import BaseModel, ConfigDict, Field, computed_field
+from padai.llms.engine import ChatEngine
 
 
 _FACTORIES: dict[str, Callable[[Dict[str, Any]], Any]] = {
@@ -39,5 +39,18 @@ def get_default_chat_model():
 class ChatModelDescription(BaseModel):
     engine: ChatEngine
     params: Dict[str, Any]
+
+    @computed_field
+    @property
+    def full_name(self) -> str:
+        return f"{self.engine}.{self.params['model']}"
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class ChatModelDescriptionEx(ChatModelDescription):
+    id: str
+    label: str
+    tags: Set[str] = Field(default_factory=set)
 
     model_config = ConfigDict(extra="forbid")
