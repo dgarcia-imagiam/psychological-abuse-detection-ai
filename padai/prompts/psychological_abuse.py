@@ -97,3 +97,55 @@ abuse_analyzer_prompts_with_context = {
         }
     }
 }
+
+abuse_analyzer_compare_prompts = {
+    Language.ES: {
+        "system": {
+            "default": (
+                "Eres un evaluador experto especializado en análisis psicológico forense. Sigue cuidadosamente las instrucciones proporcionadas por el usuario."
+            )
+        },
+        "human": {
+            "default": (
+                "Dos modelos de lenguaje diferentes realizaron análisis psicológicos forenses de un mensaje de texto, teniendo en cuenta su contexto:\n"
+                "\n"
+                "- El mensaje de texto está entre <TEXTO_PRINCIPIO> y <TEXTO_FIN>.\n"
+                "- El contexto está entre <CONTEXTO_PRINCIPIO> y <CONTEXTO_FIN>.\n"
+                "- El análisis del MODELO_1 está comprendido entre <MODELO_1_PRINCIPIO> y <MODELO_1_FIN>.\n"
+                "- El análisis del MODELO_2 está comprendido entre <MODELO_2_PRINCIPIO> y <MODELO_2_FIN>.\n"
+                "\n"
+                "¿Qué modelo proporciona un análisis más profundo, rico y detallado?\n"
+                "\n"
+                "Responde con una sola palabra (sin signos de puntuación ni palabras adicionales):\n"
+                "\n"
+                "- MODELO_1: Si MODELO_1 gana claramente.\n"
+                "- MODELO_2: Si MODELO_2 gana claramente.\n"
+                "- EMPATE: Si ninguno muestra una clara y sustantiva ventaja sobre el otro.\n"
+                "\n"
+                "<TEXTO_PRINCIPIO>\n"
+                "{text}\n"
+                "<TEXTO_FIN>\n"
+                "\n"
+                "<CONTEXTO_PRINCIPIO>\n"
+                "{context}\n"
+                "<CONTEXTO_FIN>\n"
+                "\n"
+                "<MODELO_1_PRINCIPIO>\n"
+                "{left}\n"
+                "<MODELO_1_FIN>\n"
+                "\n"
+                "<MODELO_2_PRINCIPIO>\n"
+                "{right}\n"
+                "<MODELO_2_FIN>"
+            )
+        }
+    },
+}
+
+compare_llm_responses = {
+    Language.ES: {
+        "left": "MODELO_1",
+        "right": "MODELO_2",
+        "tie": "EMPATE",
+    }
+}
