@@ -1,5 +1,4 @@
 from pathlib import Path
-
 import pandas as pd
 from typing import Union
 from docx import Document
@@ -39,3 +38,22 @@ def write_doc(df: pd.DataFrame, path: Union[str, Path]) -> None:
 
     doc.save(str(path))
 
+
+def iqr_bounds(s: pd.Series, k: float = 1.5) -> tuple[float, float]:
+    """
+    Return Tukey-fence outlier bounds for a numeric Series.
+
+    Parameters
+    ----------
+    s : pandas.Series
+    k : float, default 1.5
+        Multiplier for the IQR (use 3.0 for “extreme” fences).
+
+    Returns
+    -------
+    (lower_limit, upper_limit)
+    """
+    q1 = s.quantile(0.25)
+    q3 = s.quantile(0.75)
+    iqr = q3 - q1
+    return q1 - k * iqr, q3 + k * iqr

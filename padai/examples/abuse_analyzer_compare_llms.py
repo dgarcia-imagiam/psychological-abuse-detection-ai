@@ -13,16 +13,22 @@ from padai.chains.abuse_analyzer import (
     get_abuse_analyzer_compare_llm_prompts,
 )
 from padai.prompts.psychological_abuse import compare_llm_responses
-from typing import Dict, MutableMapping, List
+from typing import Dict, MutableMapping, List, Set
 from itertools import combinations
 from padai.chains.base import build_prompt_llm_parser_chain
 from padai.plots.compare_llms import (
     create_compare_llm_figure,
     create_empty_compare_llm_dataframe,
-    get_scores,
-    get_scores_many,
+    get_row_scores,
+    get_row_scores_many,
     normalize_scores,
     create_compare_llm_barplot_figure,
+    get_scores,
+    get_average_scores,
+    get_mode_scores,
+    mse_nonneg,
+    different_nonneg,
+    barplot_with_outliers,
 )
 from padai.config.settings import settings
 from padai.utils.path import safe_file_name
@@ -79,6 +85,74 @@ def invoke_cached(
     return response
 
 
+def get_normalized_row_scores(scores: Dict[int, Dict[str, pd.DataFrame]]) -> pd.DataFrame:
+
+    row_scores: List[pd.DataFrame] = []
+
+    for id_, dict_ in scores.items():
+        for full_name, df in dict_.items():
+            row_scores.append(get_row_scores(df))
+
+    return normalize_scores(
+        get_row_scores_many(
+            row_scores
+        )
+    )
+
+
+def get_total_scores(scores: Dict[int, Dict[str, pd.DataFrame]]) -> pd.DataFrame:
+
+    dfs: List[pd.DataFrame] = []
+
+    for id_, dict_ in scores.items():
+        for full_name, df in dict_.items():
+            dfs.append(df)
+
+    return get_scores(dfs)
+
+
+def get_total_mode_scores(scores: Dict[int, Dict[str, pd.DataFrame]]) -> pd.DataFrame:
+
+    dfs: List[pd.DataFrame] = []
+
+    for id_, dict_ in scores.items():
+        for full_name, df in dict_.items():
+            dfs.append(df)
+
+    return get_mode_scores(dfs)
+
+
+def get_referee_errors(scores: Dict[int, Dict[str, pd.DataFrame]]) -> pd.DataFrame:
+
+    full_names: Set[str] = set()
+
+    for id_, dict_ in scores.items():
+        for full_name, df in dict_.items():
+            full_names.add(full_name)
+
+    errors = pd.DataFrame(0.0, index=sorted(full_names), columns=["sum_mse", "sum_mode", "n"])
+
+    for id_, dict_ in scores.items():
+        values = list(dict_.values())
+
+        average_df = get_average_scores(values)
+        mode_df = get_mode_scores(values)
+
+        for full_name, df in dict_.items():
+            mse = mse_nonneg(df, average_df)
+            different = different_nonneg(df, mode_df)
+
+            errors.at[full_name, "sum_mse"] = errors.at[full_name, "sum_mse"] + mse
+            errors.at[full_name, "sum_mode"] = errors.at[full_name, "sum_mode"] + different
+
+            errors.at[full_name, "n"] = errors.at[full_name, "n"] + 1
+
+    errors["mse"] = errors["sum_mse"] / errors["n"]
+    errors["mode"] = errors["sum_mode"] / errors["n"]
+
+    return errors
+
+
 def main() -> None:
 
     set_llm_sqlite_cache()
@@ -91,7 +165,7 @@ def main() -> None:
 
     model_names = [description.full_name for description in default_available_models]
 
-    scores_many: List[pd.DataFrame] = []
+    scores: Dict[int, Dict[str, pd.DataFrame]] = {}
 
     cache_path = settings.path_in_cache("abuse_analyzer_compare_llms", is_file=False)
 
@@ -101,6 +175,8 @@ def main() -> None:
         text = communication["text"]
         context = strip_text(communication["context"])
         language = Language(communication["language"])
+
+        scores[id_] = {}
 
         for referee in default_available_models:
             logger.info(f"Referee: {referee.full_name}")
@@ -148,15 +224,29 @@ def main() -> None:
 
                 df.to_pickle(df_path)
 
-            fig = create_compare_llm_figure(df)
+            scores[id_][referee.full_name] = df
+
+            fig = create_compare_llm_figure(df, title=f"LLM Score Matrix ({referee.full_name}, {id_})")
             fig.show()
 
-            scores = get_scores(df)
-            scores_many.append(scores)
+            total_df = get_total_scores(scores)
+            total_mode_df = get_total_mode_scores(scores)
 
-            scores_many_normalized = normalize_scores(get_scores_many(scores_many))
+            total_fig = create_compare_llm_figure(total_df, title="LLM Score Matrix (Average)")
+            total_fig.show()
 
-            barplot = create_compare_llm_barplot_figure(scores_many_normalized)
+            total_mode_fig = create_compare_llm_figure(total_mode_df, title="LLM Score Matrix (Mode)")
+            total_mode_fig.show()
+
+            errors = get_referee_errors(scores)
+
+            errors_mse_barplot = barplot_with_outliers(errors[["mse"]].sort_values(by="mse", ascending=True), title="LLM Referee Errors (MSE)")
+            errors_mse_barplot.show()
+
+            errors_mode_barplot = barplot_with_outliers(errors[["mode"]].sort_values(by="mode", ascending=True), title="LLM Referee Errors (Mode)", decimals=0)
+            errors_mode_barplot.show()
+
+            barplot = create_compare_llm_barplot_figure(get_normalized_row_scores(scores), title="LLM Ranking")
             barplot.show()
 
 

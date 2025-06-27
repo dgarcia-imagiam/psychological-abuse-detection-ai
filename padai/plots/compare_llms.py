@@ -1,8 +1,10 @@
-from typing import List
+from typing import List, Optional, Union, Tuple
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap, BoundaryNorm
+from matplotlib.colors import ListedColormap, BoundaryNorm, LinearSegmentedColormap, Normalize, to_rgba
+from functools import reduce
+from padai.utils.pandas import iqr_bounds
 
 
 def create_empty_compare_llm_dataframe(names: List[str]):
@@ -16,78 +18,108 @@ def create_empty_compare_llm_dataframe(names: List[str]):
     return df
 
 
-def create_compare_llm_figure(df: pd.DataFrame):
+def create_compare_llm_figure(df: pd.DataFrame, title: Optional[str] = None, default_min_max: Optional[Tuple[float, float]] = (0., 2.)):
     """
     Produce a square, color‑coded matrix plot for a DataFrame whose
     rows/columns share the same set of labels.
 
     Color scheme
     ------------
-        -2 → dark gray
-        -1 → light gray
-         0 → red
-         1 → orange
-         2 → green
-      other → black
+    *  -2 → dark-grey
+    *  -1 → light-grey
+    *   >=0 → red → orange → green (min … mid … max)
+    *  any other negative value → black
 
     Parameters
     ----------
     df : pandas.DataFrame
         A square DataFrame of integers.
 
+    title : str | None, default None
+        If given, placed above the figure; if None, no title is shown.
+
+    default_min_max: tuple[float, float], default None
+        If given, values to use when vmin == vmax
+
     Returns
     -------
     matplotlib.figure.Figure
         The figure containing a single Axes image.
     """
-    # ---- 1. Map values to *codes* (0‒5) ------------------------------------
-    mapping = {-2: 0, -1: 1, 0: 2, 1: 3, 2: 4}            # all others ⇒ 5
-    code_matrix = np.full(df.shape, 5, dtype=int)         # default = 5 (“other”)
-    for val, code in mapping.items():
-        code_matrix[df.values == val] = code
+    values = df.values
 
-    # ---- 2. Build a discrete ListedColormap --------------------------------
-    colors = ["dimgray",            # code 0  -> -2
-              "lightgrey",          # code 1  -> -1
-              "red",                # code 2  ->  0
-              "orange",             # code 3  ->  1
-              "green",              # code 4  ->  2
-              "black"]              # code 5  -> other
-    cmap  = ListedColormap(colors,   name="custom_value_map")
-    norm  = BoundaryNorm(np.arange(len(colors) + 1) - 0.5, cmap.N)
+    # build a code matrix
+    grad_steps = 256  # samples in the red-orange-green ramp
+    sentinel = 2 + grad_steps  # index reserved for “other”
+    code = np.full(values.shape, sentinel, dtype=int)
 
-    # ---- 3. Create the plot -------------------------------------------------
-    fig, ax = plt.subplots(figsize=(len(df.columns) * 0.5,
-                                    len(df.index)   * 0.5))
-    n = len(df)  # square → rows == cols
-    im = ax.imshow(
-        code_matrix,
-        cmap=cmap, norm=norm,
-        interpolation="none",  # no anti-aliasing
-        aspect="equal",
-        extent=(-0.5, n-0.5, n-0.5, -0.5)
+    code[values == -2] = 0  # dark-grey
+    code[values == -1] = 1  # light-grey
+
+    # map every value ≥ 0 into [2 … 2+grad_steps-1]
+    nonneg_mask = values >= 0
+    if nonneg_mask.any():
+        vmin = values[nonneg_mask].min()
+        vmax = values[nonneg_mask].max()
+
+        if vmin == vmax:
+            assert vmin >= default_min_max[0]
+            assert vmax <= default_min_max[1]
+
+            vmin = default_min_max[0]
+            vmax = default_min_max[1]
+
+        if vmin == vmax:  # all equal → map directly to green
+            code[nonneg_mask] = 2 + grad_steps - 1
+        else:
+            scale = (values[nonneg_mask] - vmin) / (vmax - vmin)
+            code[nonneg_mask] = 2 + np.round(scale * (grad_steps - 1)).astype(int)
+
+    # build the matching color list and normalizer
+    ramp = LinearSegmentedColormap.from_list(
+        "red-orange-green", ["red", "orange", "green"], N=grad_steps
     )
 
-    # ---- 4. Ticks / labels --------------------------------------------------
-    # the image now spans exactly one integer unit per pixel
-    ax.set_xticks(np.arange(n))  # major ticks at centres
+    colours = (
+            ["dimgray", "lightgrey"]  # 0, 1
+            + [ramp(i) for i in range(grad_steps)]  # 2 … 2+grad_steps-1
+            + ["black"]  # sentinel
+    )
+    cmap = ListedColormap(colours, name="custom_llm_map")
+    norm = BoundaryNorm(np.arange(len(colours) + 1) - 0.5, cmap.N)
+
+    # create the plot
+    n = len(df)
+    fig, ax = plt.subplots(figsize=(n * 0.5, n * 0.5))
+    ax.imshow(
+        code,
+        cmap=cmap,
+        norm=norm,
+        interpolation="none",
+        aspect="equal",
+        extent=(-0.5, n - 0.5, n - 0.5, -0.5),
+    )
+
+    # ticks, grid, layout
+    ax.set_xticks(np.arange(n))
     ax.set_yticks(np.arange(n))
     ax.set_xticklabels(df.columns, rotation=90, va="top")
     ax.set_yticklabels(df.index)
 
-    # grid on every edge (-0.5 … n-0.5 inclusive)
     ax.set_xticks(np.arange(-0.5, n, 1), minor=True)
     ax.set_yticks(np.arange(-0.5, n, 1), minor=True)
     ax.grid(which="minor", color="white", linewidth=1, snap=True)
     ax.tick_params(which="minor", length=0)
 
-    # Tighten layout, detach, return
+    if title is not None:
+        fig.suptitle(title, fontsize=16)
+
     fig.tight_layout()
-    plt.close(fig)      # prevent automatic display in notebooks
+    plt.close(fig)
     return fig
 
 
-def get_scores(df: pd.DataFrame) -> pd.DataFrame:
+def get_row_scores(df: pd.DataFrame) -> pd.DataFrame:
     """
     Return a one-column DataFrame called ``score`` whose index matches *df*.
 
@@ -116,7 +148,7 @@ def get_scores(df: pd.DataFrame) -> pd.DataFrame:
     return scores.to_frame("score")
 
 
-def get_scores_many(dfs: List[pd.DataFrame]) -> pd.DataFrame:
+def get_row_scores_many(dfs: List[pd.DataFrame]) -> pd.DataFrame:
     """
     Combine several one-column ``score`` DataFrames.
 
@@ -221,12 +253,6 @@ def normalize_scores(
     return out
 
 
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap, Normalize
-
-
 def create_compare_llm_barplot_figure(
     df: pd.DataFrame,
     column: str = "score",
@@ -234,6 +260,8 @@ def create_compare_llm_barplot_figure(
     *,
     pad: float = 0.02,
     fig_width: float = 6.0,
+    title: Optional[str] = None,
+
 ) -> plt.Figure:
     """
     Create a horizontal bar plot whose colours fade from red → orange → green.
@@ -260,6 +288,8 @@ def create_compare_llm_barplot_figure(
         Fraction of (v_max – v_min) added when positioning the annotations.
     fig_width : float, default 6.0
         Width of the figure in inches; height scales automatically.
+    title : str | None, default None
+        If given, placed above the figure; if None, no title is shown.
 
     Returns
     -------
@@ -312,6 +342,224 @@ def create_compare_llm_barplot_figure(
     for y, v in zip(y_pos, scores.values):
         ax.text(v + offset, y, f"{v:.{decimals}f}", va="center")
 
+    if title is not None:
+        fig.suptitle(title, fontsize=12)
+
     fig.tight_layout()
     plt.close(fig)        # prevent automatic display in notebooks
     return fig
+
+
+def get_scores(dfs: list[pd.DataFrame]) -> pd.DataFrame:
+    if not dfs:
+        raise ValueError("dfs list is empty")
+
+    # sum of values ≥ 0
+    sum_ = reduce(lambda a, b: a.add(b.clip(lower=0), fill_value=0), dfs)
+
+    # element-wise minimum
+    min_ = reduce(lambda a, b: a.where(a < b, b), dfs)
+
+    # mask: True where *all* values are negative
+    invalid = reduce(lambda a, b: a & b, [df.lt(0) for df in dfs])
+
+    # substitute
+    return sum_.mask(invalid, min_)
+
+
+def get_average_scores(dfs: List[pd.DataFrame]) -> pd.DataFrame:
+    """
+    Element-wise average of multiple DataFrames, ignoring negatives.
+
+    For every cell across *dfs*:
+
+    • If at least one value ≥ 0 is present,
+      return the arithmetic mean of the non-negative values only.
+
+    • Otherwise (all values < 0),
+      return the minimum of those negatives.
+
+    The result uses float dtype because of the division step.
+    """
+    if not dfs:
+        raise ValueError("dfs list is empty")
+
+    # sum of non-negative values
+    sum_nonneg = reduce(
+        lambda a, b: a.add(b.clip(lower=0), fill_value=0),
+        dfs,
+    )
+
+    # count of non-negative contributors
+    counts = sum((df >= 0).astype(int) for df in dfs)
+
+    # preliminary average (will be NaN where counts == 0)
+    avg = sum_nonneg.div(counts).where(counts > 0)
+
+    # cells where *all* values are negative
+    min_negatives = reduce(lambda a, b: a.where(a < b, b), dfs)
+    invalid_mask = counts.eq(0)          # True where every value was < 0
+
+    # substitute minima into “all-negative” cells
+    result = avg.mask(invalid_mask, min_negatives)
+
+    return result
+
+
+def mse_nonneg(df1: pd.DataFrame, df2: pd.DataFrame) -> Union[float, np.float64]:
+    """
+    Scalar MSE over cells where *both* DataFrames have values ≥ 0.
+    """
+    if not (df1.index.equals(df2.index) and df1.columns.equals(df2.columns)):
+        raise ValueError("df1 and df2 must have identical index and columns")
+
+    mask = (df1 >= 0) & (df2 >= 0)
+    sq_err = (df1 - df2).pow(2).where(mask)      # invalid → NaN
+
+    # flatten to 1-D and take one mean  → every surviving cell counts once
+    mse = sq_err.stack().mean()  # stack() drops NaNs by default
+
+    return mse
+
+
+def barplot_with_outliers(
+    df: pd.DataFrame,
+    *,
+    decimals: int = 2,
+    k: float = 1.5,
+    cmap_norm = None,      # optional, see note
+    title: Optional[str] = None,
+
+) -> plt.Figure:
+    """
+    Horizontal bar-plot of a single numeric column.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Index supplies the labels; must have exactly one numeric column.
+    decimals : int, default 2
+        Round the value annotations.
+    k : float, default 1.5
+        Tukey fence multiplier; 1.5 → “normal” outliers, 3 → “extreme”.
+    cmap_norm : callable | None
+        Optional function that receives the value Series and returns an
+        array-like of face colours; ignored for outliers (they are red).
+    title : str | None, default None
+        If given, placed above the figure; if None, no title is shown.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+    """
+    if df.shape[1] != 1:
+        raise ValueError("DataFrame must have exactly one column")
+    values = df.iloc[:, 0].astype(float)
+    labels = df.index
+
+    # 1 — identify outliers (IQR rule)
+    lower, upper = iqr_bounds(values, k=k)
+    is_outlier = (values < lower) | (values > upper)
+
+    # 2 — colour map: red for outliers, else optional gradient or grey
+    if cmap_norm:
+        base_colours = np.asarray(cmap_norm(values))
+    else:
+        base_colours = np.repeat([to_rgba("steelblue")], len(values), axis=0)
+    base_colours[is_outlier.values] = to_rgba("red")
+
+    # 3 — plot
+    y_pos = np.arange(len(values))
+    fig, ax = plt.subplots(figsize=(6.5, 0.5 * len(values) + 1))
+    ax.barh(y_pos, values.values, color=base_colours)
+
+    # axis / labels
+    ax.set_yticks(y_pos)
+    ax.set_yticklabels(labels)
+    ax.invert_yaxis()                      # smallest value at bottom
+    ax.set_xlabel(df.columns[0])
+
+    # annotate values
+    pad = 0.01 * (values.max() - values.min())
+    for y, v in zip(y_pos, values):
+        ax.text(v + pad, y,
+                f"{v:.{decimals}f}",
+                va="center", ha="left",
+                fontsize=9)
+
+    # tidy look
+    ax.spines[["right", "top"]].set_visible(False)
+
+    if title is not None:
+        fig.suptitle(title, fontsize=12)
+
+    fig.tight_layout()
+    plt.close(fig)
+    return fig
+
+
+def get_mode_scores(
+    dfs: List[pd.DataFrame],
+    *,
+    random_state: Optional[int] = None,      # set a seed for reproducible ties
+) -> pd.DataFrame:
+    """
+    Element-wise *mode* across several equally-shaped DataFrames.
+
+    • If at least one value in the cell is ≥ 0, return the **mode**
+      of those non-negatives.  When several values tie for the mode,
+      choose *one at random* (controlled by `random_state`).
+
+    • If **all** values in the cell are < 0, return the minimum
+      of those negatives (unchanged from the average-helper behaviour).
+    """
+    if not dfs:
+        raise ValueError("dfs list is empty")
+
+    # Stack the values into a 3-D array for fast slicing
+    arr = np.stack([df.values for df in dfs], axis=0)
+    n_rows, n_cols = arr.shape[1:]
+
+    rng = np.random.default_rng(random_state)
+    out = np.empty((n_rows, n_cols), dtype=arr.dtype)
+
+    for i in range(n_rows):
+        for j in range(n_cols):
+            cell_vals = arr[:, i, j]
+
+            nonneg = cell_vals[cell_vals >= 0]
+            if nonneg.size:                          # at least one ≥ 0
+                vals, counts = np.unique(nonneg, return_counts=True)
+                max_count = counts.max()
+                tied = vals[counts == max_count]     # all equally common
+                out[i, j] = rng.choice(tied)         # pick one at random
+            else:
+                out[i, j] = cell_vals.min()          # all-negative fallback
+
+    first = dfs[0]
+    return pd.DataFrame(out, index=first.index, columns=first.columns)
+
+
+def different_nonneg(
+    df1: pd.DataFrame,
+    df2: pd.DataFrame
+
+) -> Union[int, np.integer]:
+    """
+    Count the cells where ``df1`` and ``df2`` differ, *restricted* to the
+    positions where both values are ≥ 0.
+
+    Returns
+    -------
+    int  (or numpy integer)
+        Number of cells that satisfy:
+            (df1 >= 0) & (df2 >= 0) & (df1 != df2)
+    """
+    if not (df1.index.equals(df2.index) and df1.columns.equals(df2.columns)):
+        raise ValueError("df1 and df2 must have identical index and columns")
+
+    valid   = (df1 >= 0) & (df2 >= 0)      # keep only non-negative pairs
+    diff    = df1.ne(df2)                  # element-wise inequality
+    mismask = diff & valid                 # True where *both* conditions hold
+
+    return int(mismask.values.sum())       # faster than mismask.sum().sum()
