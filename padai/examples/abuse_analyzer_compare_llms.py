@@ -2,7 +2,7 @@ import padai.config.bootstrap  # noqa: F401 always first import in main entry po
 
 from padai.datasets.psychological_abuse import get_communications_df, get_or_create_communication
 from padai.utils.llm_cache import set_llm_sqlite_cache
-from padai.llms.available import default_available_models
+from padai.llms.available import default_available_models, default_available_models_registry
 from padai.utils.text import strip_text
 from padai.config.language import Language
 from padai.llms.base import ChatModelDescriptionEx
@@ -226,27 +226,64 @@ def main() -> None:
 
             scores[id_][referee.full_name] = df
 
-            fig = create_compare_llm_figure(df, title=f"LLM Score Matrix ({referee.full_name}, {id_})")
+            fig = create_compare_llm_figure(
+                ChatModelDescriptionEx.nice_index(
+                    df,
+                    default_available_models_registry
+                ),
+                title=f"LLM Score Matrix ({referee.full_name}, {id_})"
+            )
             fig.show()
 
             total_df = get_total_scores(scores)
             total_mode_df = get_total_mode_scores(scores)
 
-            total_fig = create_compare_llm_figure(total_df, title="LLM Score Matrix (Average)")
+            total_fig = create_compare_llm_figure(
+                ChatModelDescriptionEx.nice_index(
+                    total_df,
+                    default_available_models_registry
+                ),
+                title="LLM Score Matrix (Average)"
+            )
             total_fig.show()
 
-            total_mode_fig = create_compare_llm_figure(total_mode_df, title="LLM Score Matrix (Mode)")
+            total_mode_fig = create_compare_llm_figure(
+                ChatModelDescriptionEx.nice_index(
+                    total_mode_df,
+                    default_available_models_registry
+                ),
+                title="LLM Score Matrix (Mode)"
+            )
             total_mode_fig.show()
 
             errors = get_referee_errors(scores)
 
-            errors_mse_barplot = barplot_with_outliers(errors[["mse"]].sort_values(by="mse", ascending=True), title="LLM Referee Errors (MSE)")
+            errors_mse_barplot = barplot_with_outliers(
+                ChatModelDescriptionEx.nice_index(
+                    errors[["mse"]].sort_values(by="mse", ascending=True),
+                    default_available_models_registry
+                ),
+                title="LLM Referee Errors (MSE)"
+            )
             errors_mse_barplot.show()
 
-            errors_mode_barplot = barplot_with_outliers(errors[["mode"]].sort_values(by="mode", ascending=True), title="LLM Referee Errors (Mode)", decimals=0)
+            errors_mode_barplot = barplot_with_outliers(
+                ChatModelDescriptionEx.nice_index(
+                    errors[["mode"]].sort_values(by="mode", ascending=True),
+                    default_available_models_registry
+                ),
+                title="LLM Referee Errors (Mode)",
+                decimals=0
+            )
             errors_mode_barplot.show()
 
-            barplot = create_compare_llm_barplot_figure(get_normalized_row_scores(scores), title="LLM Ranking")
+            barplot = create_compare_llm_barplot_figure(
+                ChatModelDescriptionEx.nice_index(
+                    get_normalized_row_scores(scores),
+                    default_available_models_registry
+                ),
+                title="LLM Ranking"
+            )
             barplot.show()
 
 

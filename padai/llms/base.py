@@ -5,6 +5,7 @@ from padai.llms.google import get_default_chat_google, get_chat_google
 from typing import Dict, Any, Callable, Set
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 from padai.llms.engine import ChatEngine
+import pandas as pd
 
 
 _FACTORIES: dict[str, Callable[[Dict[str, Any]], Any]] = {
@@ -54,3 +55,22 @@ class ChatModelDescriptionEx(ChatModelDescription):
     tags: Set[str] = Field(default_factory=set)
 
     model_config = ConfigDict(extra="forbid")
+
+    @staticmethod
+    def nice_index(
+        df: pd.DataFrame,
+        registry: dict[str, "ChatModelDescriptionEx"]
+
+    ) -> pd.DataFrame:
+        """
+        Return *df* with its index replaced by the human-readable labels
+        found in *registry* (falling back to the original key when a label
+        is missing).
+
+        The order and length of the DataFrame stay the same.
+        """
+        return df.rename(
+            index=lambda idx: registry[idx].label  # preferred
+            if idx in registry and registry[idx].label
+            else idx  # fallback
+        )
