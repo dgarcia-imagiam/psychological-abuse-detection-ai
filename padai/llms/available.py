@@ -9,10 +9,10 @@ default_available_models: List[ChatModelDescriptionEx] = [
     ChatModelDescriptionEx(id="o4-mini",         label="OpenAI: o4-mini",            engine="openai",    params={"model": "o4-mini"},                               tags={"no-temperature"}),
     ChatModelDescriptionEx(id="gpt-4.5-preview", label="OpenAI: GPT-4.5 (preview)",    engine="openai",    params={"model": "gpt-4.5-preview"}),
     ChatModelDescriptionEx(id="gpt-4.1",         label="OpenAI: GPT-4.1",            engine="openai",    params={"model": "gpt-4.1"}),
-    ChatModelDescriptionEx(id="gpt-4.1-mini",    label="OpenAI: GPT-4.1-mini",       engine="openai",    params={"model": "gpt-4.1-mini"}),
-    ChatModelDescriptionEx(id="gpt-4.1-nano",    label="OpenAI: GPT-4.1-nano",       engine="openai",    params={"model": "gpt-4.1-nano"}),
+    ChatModelDescriptionEx(id="gpt-4.1-mini",    label="OpenAI: GPT-4.1 mini",       engine="openai",    params={"model": "gpt-4.1-mini"}),
+    ChatModelDescriptionEx(id="gpt-4.1-nano",    label="OpenAI: GPT-4.1 nano",       engine="openai",    params={"model": "gpt-4.1-nano"}),
     ChatModelDescriptionEx(id="gpt-4o",          label="OpenAI: GPT-4o",             engine="openai",    params={"model": "gpt-4o"}),
-    ChatModelDescriptionEx(id="gpt-4o-mini",     label="OpenAI: GPT-4o-mini",        engine="openai",    params={"model": "gpt-4o-mini"}),
+    ChatModelDescriptionEx(id="gpt-4o-mini",     label="OpenAI: GPT-4o mini",        engine="openai",    params={"model": "gpt-4o-mini"}),
 
     ChatModelDescriptionEx(id="nova-premier",    label="AWS BedRock: Nova Premier",  engine="bedrock",   params={"model": "us.amazon.nova-premier-v1:0", "region_name": "us-east-1"}),
     ChatModelDescriptionEx(id="nova-pro",        label="AWS BedRock: Nova Pro",      engine="bedrock",   params={"model": "amazon.nova-pro-v1:0", "region_name": "us-east-1"}),
@@ -30,3 +30,4 @@ default_available_models: List[ChatModelDescriptionEx] = [
 default_available_models_registry: Dict[str, ChatModelDescriptionEx] = {
     m.full_name: m for m in default_available_models
 }
+

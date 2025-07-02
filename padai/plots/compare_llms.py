@@ -260,6 +260,7 @@ def create_compare_llm_barplot_figure(
     *,
     pad: float = 0.02,
     fig_width: float = 6.0,
+    dpi: int = 100,
     title: Optional[str] = None,
 
 ) -> plt.Figure:
@@ -288,6 +289,9 @@ def create_compare_llm_barplot_figure(
         Fraction of (v_max – v_min) added when positioning the annotations.
     fig_width : float, default 6.0
         Width of the figure in inches; height scales automatically.
+    dpi : int, default 100
+        The dpi that matplotlib uses **inside the Figure** and that you
+        will probably pass to ``fig.savefig(..., dpi=dpi)`` later.
     title : str | None, default None
         If given, placed above the figure; if None, no title is shown.
 
@@ -320,7 +324,7 @@ def create_compare_llm_barplot_figure(
 
     # ------- 2.  Create figure & axes ---------------------------------------
     fig_height = 0.5 * len(scores) + 1.0      # heuristic for tidy spacing
-    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height), dpi=dpi)
 
     # ------- 3.  Draw horizontal bars ---------------------------------------
     y_pos = np.arange(len(scores))

@@ -103,7 +103,7 @@ config_section = [
     dbc.Label("Modelo", html_for="model"),
     dcc.Dropdown(
         id="model",
-        options=[{"label": m.label, "value": m.id} for m in default_available_models],
+        options=[{"label": m.label, "value": m.full_name} for m in default_available_models],
         value=default_available_models[0].id,
         clearable=False,
         maxHeight=600,
