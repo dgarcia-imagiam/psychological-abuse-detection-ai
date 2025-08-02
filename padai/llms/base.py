@@ -2,6 +2,7 @@ from padai.config.settings import settings
 from padai.llms.aws import get_default_chat_bedrock, get_chat_bedrock
 from padai.llms.openai import get_default_chat_openai, get_chat_openai
 from padai.llms.google import get_default_chat_google, get_chat_google
+from padai.llms.huggingface import get_default_chat_huggingface, get_chat_huggingface
 from typing import Dict, Any, Callable, Set
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 from padai.llms.engine import ChatEngine
@@ -12,12 +13,14 @@ _FACTORIES: dict[str, Callable[[Dict[str, Any]], Any]] = {
     "bedrock": get_chat_bedrock,
     "openai":  get_chat_openai,
     "google": get_chat_google,
+    "huggingface": get_chat_huggingface,
 }
 
 _DEFAULT_FACTORIES: dict[str, Callable[[], Any]] = {
     "bedrock": get_default_chat_bedrock,
     "openai":  get_default_chat_openai,
     "google": get_default_chat_google,
+    "huggingface": get_default_chat_huggingface,
 }
 
 

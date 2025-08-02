@@ -6,9 +6,11 @@ from padai.config.logging import LoggingSettings
 from padai.config.openai import OpenAISettings
 from padai.config.aws import BedrockSettings
 from padai.config.google import GoogleSettings
+from padai.config.huggingface import HuggingFaceSettings
 from padai.config.language import Language
 from padai.llms.engine import ChatEngine
 from slugify import slugify
+import os
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -19,6 +21,7 @@ class AppSettings(BaseSettings):
     environment: Literal["dev", "staging", "prod"] = "dev"
     debug: bool = True
     home: Path | None = None
+    huggingface_home: Path | None = None
 
     language: Language = Language.ES
     available_languages: List[Language] = Field(
@@ -31,6 +34,7 @@ class AppSettings(BaseSettings):
     openai: OpenAISettings = Field(default_factory=OpenAISettings)
     bedrock: BedrockSettings = Field(default_factory=BedrockSettings)
     google: GoogleSettings = Field(default_factory=GoogleSettings)
+    huggingface: HuggingFaceSettings = Field(default_factory=HuggingFaceSettings)
 
     default_chat_model: ChatEngine = "openai"
 
@@ -49,6 +53,12 @@ class AppSettings(BaseSettings):
     def model_post_init(self, __context) -> None:
         if self.home is None:
             self.home = Path.home() / f"{self.safe_name}"
+
+        if self.huggingface_home is None:
+            self.huggingface_home = self.home / "huggingface"
+
+        os.environ["HF_TOKEN"] = self.huggingface.hub_token.get_secret_value()
+        os.environ["HF_HOME"] = str(self.huggingface_home)
 
     def init_logging(self) -> None:
         import logging.config

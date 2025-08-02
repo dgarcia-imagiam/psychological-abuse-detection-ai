@@ -3,6 +3,7 @@ import padai.config.bootstrap  # noqa: F401 always first import in main entry po
 from padai.llms.openai import get_default_chat_openai
 from padai.llms.aws import get_default_chat_bedrock
 from padai.llms.google import get_default_chat_google
+from padai.llms.huggingface import get_default_chat_huggingface
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
@@ -32,6 +33,7 @@ def log_hello(name, llm):
 
 
 def main() -> None:
+    log_hello("HuggingFace", get_default_chat_huggingface())
     log_hello("OpenAI", get_default_chat_openai())
     log_hello("Bedrock", get_default_chat_bedrock())
     log_hello("Google", get_default_chat_google())
