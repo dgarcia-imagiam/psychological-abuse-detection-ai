@@ -27,7 +27,7 @@ def build_prompt_llm_parser_chain(
     if top_p is not None:
         params["top_p"] = top_p
 
-    llm = get_chat_model(description.engine, description.params)
+    llm = get_chat_model(description.engine, params)
     parser = StrOutputParser()
 
     return prompt | llm | parser

@@ -3,6 +3,7 @@ from padai.datasets.psychological_abuse import get_communications_df, get_commun
 from padai.config.settings import settings
 from padai.chains.abuse_analyzer import get_abuse_analyzer_chain, get_abuse_analyzer_params
 from padai.utils.text import process_response
+from padai.llms.disposable import make_disposable
 import logging
 
 
@@ -21,8 +22,15 @@ def log_models(models) -> None:
         logger.info(f"Model: {model.full_name}")
 
         llm = get_chat_model(model.engine, model.params)
+        disposable = make_disposable(llm)
 
-        chain = get_abuse_analyzer_chain(llm, params)
-        response: str = process_response(chain.invoke(params))
+        try:
+            chain = get_abuse_analyzer_chain(llm, params)
+            response: str = process_response(chain.invoke(params))
 
-        logger.info(response)
+            logger.info(response)
+
+        finally:
+            # Important: drop chain reference so GC can break the link to llm
+            del chain
+            disposable.dispose()

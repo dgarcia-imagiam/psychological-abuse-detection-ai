@@ -61,7 +61,7 @@ def process_response_strip(response: str) -> str:
 
 
 def process_response_reasoning(response: str) -> str:
-    return re.sub(r"<(reasoning|analysis)>.*?</\1>", "", response, flags=re.DOTALL).strip()
+    return re.sub(r"<(reasoning|analysis|think)>.*?</\1>", "", response, flags=re.DOTALL).strip()
 
 
 def process_response(response: str) -> str:
