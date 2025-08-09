@@ -1,4 +1,5 @@
 from padai.llms.base import ChatModelDescriptionEx, get_chat_model
+from padai.llms.disposable import make_disposable
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from typing import Optional
@@ -30,4 +31,4 @@ def build_prompt_llm_parser_chain(
     llm = get_chat_model(description.engine, params)
     parser = StrOutputParser()
 
-    return prompt | llm | parser
+    return prompt | llm | parser, make_disposable(llm)

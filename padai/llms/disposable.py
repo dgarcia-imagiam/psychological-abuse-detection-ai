@@ -3,7 +3,7 @@ from langchain_huggingface import ChatHuggingFace
 import gc, torch
 
 
-def _dispose_hf_chat_llm(chat_llm) -> None:
+def _dispose_hf_chat_llm(chat_llm, *, aggressive: bool = False) -> None:
     """
     Best-effort cleanup for ChatHuggingFace wrapping a HuggingFacePipeline.
     Frees GPU VRAM by moving model to CPU, dropping refs, and clearing caches.
@@ -28,6 +28,9 @@ def _dispose_hf_chat_llm(chat_llm) -> None:
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+            if aggressive:
+                # Only really useful if you've used CUDA IPC / multi-process sharing
+                torch.cuda.ipc_collect()
 
 
 class Disposable(Protocol):

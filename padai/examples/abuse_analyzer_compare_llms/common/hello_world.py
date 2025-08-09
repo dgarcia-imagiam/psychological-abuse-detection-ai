@@ -6,15 +6,21 @@ logger = logging.getLogger(__name__)
 
 
 def log_hello(description):
-    chain = build_prompt_llm_parser_chain(
+    chain, disposable = build_prompt_llm_parser_chain(
         description,
         "You are a concise assistant. Respond briefly.",
         "{user_input}",
     )
-    response: str = process_response(
-        chain.invoke({
-            "user_input": "Hello, world!",
-        })
-    )
+    try:
+        response: str = process_response(
+            chain.invoke({
+                "user_input": "Hello, world!",
+            })
+        )
 
-    logger.info("%s: %s", description.full_name, response)
+        logger.info("%s: %s", description.full_name, response)
+
+    finally:
+        # Important: drop chain reference so GC can break the link to llm
+        del chain
+        disposable.dispose()
