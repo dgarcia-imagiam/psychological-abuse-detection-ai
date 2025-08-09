@@ -23,7 +23,6 @@ default_available_models: List[ChatModelDescriptionEx] = [
     ChatModelDescriptionEx(id="deep-seek",       label="AWS BedRock: DeepSeek-R1",   engine="bedrock",   params={"model": "us.deepseek.r1-v1:0", "region_name": "us-west-2"}),
     ChatModelDescriptionEx(id="gpt-oss-120b",    label="AWS BedRock: GPT-OSS-120B",  engine="bedrock",   params={"model": "openai.gpt-oss-120b-1:0", "region_name": "us-west-2"}),
     ChatModelDescriptionEx(id="gpt-oss-20b",     label="AWS BedRock: GPT-OSS-20B",   engine="bedrock",   params={"model": "openai.gpt-oss-20b-1:0", "region_name": "us-west-2"}),
-    ChatModelDescriptionEx(id="gpt-oss-20b",     label="AWS BedRock: GPT-OSS-20B",   engine="bedrock",   params={"model": "openai.gpt-oss-20b-1:0", "region_name": "us-west-2"}),
 
     ChatModelDescriptionEx(id="llama3-3-70b-instruct",  label="AWS BedRock: Llama 3.3 70B Instruct",   engine="bedrock",   params={"model": "us.meta.llama3-3-70b-instruct-v1:0", "region_name": "us-west-2"}),
 

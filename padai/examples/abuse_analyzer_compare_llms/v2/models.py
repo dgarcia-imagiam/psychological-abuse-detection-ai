@@ -12,6 +12,7 @@ _BASE_MODELS: List[ChatModelDescriptionEx] = [
     #ChatModelDescriptionEx(id="gpt-4.1-mini",   label="OpenAI: GPT-4.1 mini",   engine="openai",    params={"model": "gpt-4.1-mini"}),
 
     #ChatModelDescriptionEx(id="gpt-oss-120b",           label="AWS BedRock: GPT-OSS-120B",              engine="bedrock",   params={"model": "openai.gpt-oss-120b-1:0", "region_name": "us-west-2"}),
+    #ChatModelDescriptionEx(id="gpt-oss-20b",            label="AWS BedRock: GPT-OSS-20B",               engine="bedrock",   params={"model": "openai.gpt-oss-20b-1:0", "region_name": "us-west-2"}),
     #ChatModelDescriptionEx(id="nova-pro",               label="AWS BedRock: Nova Pro",                  engine="bedrock",   params={"model": "amazon.nova-pro-v1:0", "region_name": "us-east-1"}),
     #ChatModelDescriptionEx(id="deep-seek",              label="AWS BedRock: DeepSeek-R1",               engine="bedrock",   params={"model": "us.deepseek.r1-v1:0", "region_name": "us-west-2"}),
     #ChatModelDescriptionEx(id="llama3-3-70b-instruct",  label="AWS BedRock: Llama 3.3 70B Instruct",    engine="bedrock",   params={"model": "us.meta.llama3-3-70b-instruct-v1:0", "region_name": "us-west-2"}),
@@ -21,15 +22,13 @@ _BASE_MODELS: List[ChatModelDescriptionEx] = [
 ]
 
 _CPU_MODELS: List[ChatModelDescriptionEx] = [
-    ChatModelDescriptionEx(id="gpt-oss-20b",            label="AWS BedRock: GPT-OSS-20B",       engine="bedrock",       params={"model": "openai.gpt-oss-20b-1:0", "region_name": "us-west-2"}),
     ChatModelDescriptionEx(id="Llama-3.2-1B-Instruct",  label="Meta: Llama-3.2-1B-Instruct",    engine="huggingface",   params={"model_id": "meta-llama/Llama-3.2-1B-Instruct", "max_new_tokens": MAX_NEW_TOKENS}),
     ChatModelDescriptionEx(id="gemma-3-1b-it",          label="Google: Gemma 3 1B",             engine="huggingface",   params={"model_id": "google/gemma-3-1b-it", "max_new_tokens": MAX_NEW_TOKENS}),
 ]
 
 _GPU_MODELS: List[ChatModelDescriptionEx] = [
-    ChatModelDescriptionEx(id="gpt-oss-20b",                label="OpenAI: GPT-OSS-20B",            engine="huggingface",   params={"model_id": "openai/gpt-oss-20b", "max_new_tokens": MAX_NEW_TOKENS}),
-    ChatModelDescriptionEx(id="gemma-3-27b-it",             label="Google: Gemma 3 27B It",         engine="huggingface",   params={"model_id": "google/gemma-3-27b-it", "max_new_tokens": MAX_NEW_TOKENS}),
     ChatModelDescriptionEx(id="phi-4",                      label="Microsoft: Phi-4",               engine="huggingface",   params={"model_id": "microsoft/phi-4", "max_new_tokens": MAX_NEW_TOKENS}),
+    ChatModelDescriptionEx(id="gemma-3-12b-it",             label="Google: Gemma 3 12B Instruct",   engine="huggingface",   params={"model_id": "google/gemma-3-12b-it", "max_new_tokens": MAX_NEW_TOKENS}),
     ChatModelDescriptionEx(id="Llama-3.1-8B-Instruct",      label="Meta: Llama 3.1 8B Instruct",    engine="huggingface",   params={"model_id": "meta-llama/Llama-3.1-8B-Instruct", "max_new_tokens": MAX_NEW_TOKENS}),
     ChatModelDescriptionEx(id="deepseek-llm-7b-chat",       label="DeepSeek: LLM 7B Chat",          engine="huggingface",   params={"model_id": "deepseek-ai/deepseek-llm-7b-chat", "max_new_tokens": MAX_NEW_TOKENS}),
     ChatModelDescriptionEx(id="Mistral-7B-Instruct-v0.3",   label="Mistral: 7B Instruct v0.3",      engine="huggingface",   params={"model_id": "mistralai/Mistral-7B-Instruct-v0.3", "max_new_tokens": MAX_NEW_TOKENS}),
