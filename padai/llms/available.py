@@ -3,11 +3,13 @@ from typing import List, Dict
 
 
 default_available_models: List[ChatModelDescriptionEx] = [
+    ChatModelDescriptionEx(id="gpt-5",           label="OpenAI: GPT-5",              engine="openai",    params={"model": "gpt-5"},                                 tags={"no-temperature"}),
+    ChatModelDescriptionEx(id="gpt-5-mini",      label="OpenAI: GPT-5-mini",         engine="openai",    params={"model": "gpt-5-mini"},                            tags={"no-temperature"}),
+    ChatModelDescriptionEx(id="gpt-5-nano",      label="OpenAI: GPT-5-nano",         engine="openai",    params={"model": "gpt-5-nano"},                            tags={"no-temperature"}),
     ChatModelDescriptionEx(id="o3-pro",          label="OpenAI: o3-pro",             engine="openai",    params={"model": "o3-pro", "use_responses_api": True},     tags={"no-temperature"}),
     ChatModelDescriptionEx(id="o3",              label="OpenAI: o3",                 engine="openai",    params={"model": "o3"},                                    tags={"no-temperature"}),
     ChatModelDescriptionEx(id="o3-mini",         label="OpenAI: o3-mini",            engine="openai",    params={"model": "o3-mini"},                               tags={"no-temperature"}),
     ChatModelDescriptionEx(id="o4-mini",         label="OpenAI: o4-mini",            engine="openai",    params={"model": "o4-mini"},                               tags={"no-temperature"}),
-    ChatModelDescriptionEx(id="gpt-4.5-preview", label="OpenAI: GPT-4.5 (preview)",    engine="openai",    params={"model": "gpt-4.5-preview"}),
     ChatModelDescriptionEx(id="gpt-4.1",         label="OpenAI: GPT-4.1",            engine="openai",    params={"model": "gpt-4.1"}),
     ChatModelDescriptionEx(id="gpt-4.1-mini",    label="OpenAI: GPT-4.1 mini",       engine="openai",    params={"model": "gpt-4.1-mini"}),
     ChatModelDescriptionEx(id="gpt-4.1-nano",    label="OpenAI: GPT-4.1 nano",       engine="openai",    params={"model": "gpt-4.1-nano"}),
@@ -19,11 +21,18 @@ default_available_models: List[ChatModelDescriptionEx] = [
     ChatModelDescriptionEx(id="nova-lite",       label="AWS BedRock: Nova Lite",     engine="bedrock",   params={"model": "amazon.nova-lite-v1:0", "region_name": "us-east-1"}),
     ChatModelDescriptionEx(id="nova-micro",      label="AWS BedRock: Nova Micro",    engine="bedrock",   params={"model": "amazon.nova-micro-v1:0", "region_name": "us-east-1"}),
     ChatModelDescriptionEx(id="deep-seek",       label="AWS BedRock: DeepSeek-R1",   engine="bedrock",   params={"model": "us.deepseek.r1-v1:0", "region_name": "us-west-2"}),
+    ChatModelDescriptionEx(id="gpt-oss-120b",    label="AWS BedRock: GPT-OSS-120B",  engine="bedrock",   params={"model": "openai.gpt-oss-120b-1:0", "region_name": "us-west-2"}),
+    ChatModelDescriptionEx(id="gpt-oss-20b",     label="AWS BedRock: GPT-OSS-20B",   engine="bedrock",   params={"model": "openai.gpt-oss-20b-1:0", "region_name": "us-west-2"}),
+    ChatModelDescriptionEx(id="gpt-oss-20b",     label="AWS BedRock: GPT-OSS-20B",   engine="bedrock",   params={"model": "openai.gpt-oss-20b-1:0", "region_name": "us-west-2"}),
 
-    ChatModelDescriptionEx(id="gemini-2.5-pro-preview",      label="Google: Gemini 2.5 Pro (preview 06/05)",    engine="google",    params={"model": "gemini-2.5-pro-preview-06-05"}),
-    ChatModelDescriptionEx(id="gemini-2.5-flash-preview",    label="Google: Gemini 2.5 Flash (preview 05/20)",  engine="google",    params={"model": "gemini-2.5-flash-preview-05-20"}),
-    ChatModelDescriptionEx(id="gemini-2.0-flash",            label="Google: Gemini 2.0 Flash",                  engine="google",    params={"model": "gemini-2.0-flash"}),
-    ChatModelDescriptionEx(id="gemini-2.0-flash-lite",       label="Google: Gemini 2.0 Flash Lite",             engine="google",    params={"model": "gemini-2.0-flash-lite"}),
+    ChatModelDescriptionEx(id="llama3-3-70b-instruct",  label="AWS BedRock: Llama 3.3 70B Instruct",   engine="bedrock",   params={"model": "us.meta.llama3-3-70b-instruct-v1:0", "region_name": "us-west-2"}),
+
+
+    ChatModelDescriptionEx(id="gemini-2.5-pro",         label="Google: Gemini 2.5 Pro",         engine="google",    params={"model": "gemini-2.5-pro"}),
+    ChatModelDescriptionEx(id="gemini-2.5-flash",       label="Google: Gemini 2.5 Flash",       engine="google",    params={"model": "gemini-2.5-flash"}),
+    ChatModelDescriptionEx(id="gemini-2.5-flash-lite",  label="Google: Gemini 2.5 Flash-Lite",  engine="google",    params={"model": "gemini-2.5-flash-lite"}),
+    ChatModelDescriptionEx(id="gemini-2.0-flash",       label="Google: Gemini 2.0 Flash",       engine="google",    params={"model": "gemini-2.0-flash"}),
+    ChatModelDescriptionEx(id="gemini-2.0-flash-lite",  label="Google: Gemini 2.0 Flash Lite",  engine="google",    params={"model": "gemini-2.0-flash-lite"}),
 ]
 
 

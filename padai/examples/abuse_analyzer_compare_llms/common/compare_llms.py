@@ -1,9 +1,6 @@
-import padai.config.bootstrap  # noqa: F401 always first import in main entry points
-
 from padai.datasets.psychological_abuse import get_communications_df, get_or_create_communication
 from padai.utils.llm_cache import set_llm_sqlite_cache
-from padai.llms.available import default_available_models, default_available_models_registry
-from padai.utils.text import strip_text
+from padai.utils.text import strip_text, process_response
 from padai.config.language import Language
 from padai.llms.base import ChatModelDescriptionEx
 from padai.chains.abuse_analyzer import (
@@ -32,6 +29,7 @@ from padai.plots.compare_llms import (
 )
 from padai.config.settings import settings
 from padai.utils.path import safe_file_name
+from pathlib import Path
 import hashlib
 import logging
 import pandas as pd
@@ -153,7 +151,11 @@ def get_referee_errors(scores: Dict[int, Dict[str, pd.DataFrame]]) -> pd.DataFra
     return errors
 
 
-def main() -> None:
+def run(
+        descriptions: List[ChatModelDescriptionEx],
+        descriptions_registry: Dict[str, ChatModelDescriptionEx],
+        path_in_cache: Path,
+) -> None:
 
     set_llm_sqlite_cache()
 
@@ -163,11 +165,11 @@ def main() -> None:
 
     llm_cache: LLMCache = {}
 
-    model_names = [description.full_name for description in default_available_models]
+    model_names = [description.full_name for description in descriptions]
 
     scores: Dict[int, Dict[str, pd.DataFrame]] = {}
 
-    cache_path = settings.path_in_cache("abuse_analyzer_compare_llms", is_file=False)
+    cache_path = settings.path_in_cache(path_in_cache, is_file=False)
 
     for id_ in communications_df.index:
         communication = get_or_create_communication(id_, communications_df)
@@ -178,7 +180,7 @@ def main() -> None:
 
         scores[id_] = {}
 
-        for referee in default_available_models:
+        for referee in descriptions:
             logger.info(f"Referee: {referee.full_name}")
 
             df_path = cache_path / safe_file_name(f"df.{id_}.{referee.full_name}.pkl")
@@ -188,7 +190,7 @@ def main() -> None:
             else:
                 df = create_empty_compare_llm_dataframe(model_names)
 
-                for left, right in combinations(default_available_models, 2):
+                for left, right in combinations(descriptions, 2):
                     logger.info(f"{left.full_name} vs {right.full_name}")
 
                     left_response: str = invoke_cached(llm_cache, severity, text, context, language, left)
@@ -205,7 +207,7 @@ def main() -> None:
                         temperature=0,
                         top_p=1,
                     )
-                    response: str = chain.invoke(params)
+                    response: str = process_response(chain.invoke(params))
 
                     logger.info(f"Response: {response}")
 
@@ -229,7 +231,7 @@ def main() -> None:
             fig = create_compare_llm_figure(
                 ChatModelDescriptionEx.nice_index(
                     df,
-                    default_available_models_registry
+                    descriptions_registry
                 ),
                 title=f"LLM Score Matrix ({referee.full_name}, {id_})"
             )
@@ -241,7 +243,7 @@ def main() -> None:
             total_fig = create_compare_llm_figure(
                 ChatModelDescriptionEx.nice_index(
                     total_df,
-                    default_available_models_registry
+                    descriptions_registry
                 ),
                 title="LLM Score Matrix (Average)"
             )
@@ -250,7 +252,7 @@ def main() -> None:
             total_mode_fig = create_compare_llm_figure(
                 ChatModelDescriptionEx.nice_index(
                     total_mode_df,
-                    default_available_models_registry
+                    descriptions_registry
                 ),
                 title="LLM Score Matrix (Mode)"
             )
@@ -261,7 +263,7 @@ def main() -> None:
             errors_mse_barplot = barplot_with_outliers(
                 ChatModelDescriptionEx.nice_index(
                     errors[["mse"]].sort_values(by="mse", ascending=True),
-                    default_available_models_registry
+                    descriptions_registry
                 ),
                 title="LLM Referee Errors (MSE)"
             )
@@ -270,7 +272,7 @@ def main() -> None:
             errors_mode_barplot = barplot_with_outliers(
                 ChatModelDescriptionEx.nice_index(
                     errors[["mode"]].sort_values(by="mode", ascending=True),
-                    default_available_models_registry
+                    descriptions_registry
                 ),
                 title="LLM Referee Errors (Mode)",
                 decimals=0
@@ -280,12 +282,8 @@ def main() -> None:
             barplot = create_compare_llm_barplot_figure(
                 ChatModelDescriptionEx.nice_index(
                     get_normalized_row_scores(scores),
-                    default_available_models_registry
+                    descriptions_registry
                 ),
                 title="LLM Ranking"
             )
             barplot.show()
-
-
-if __name__ == "__main__":
-    main()

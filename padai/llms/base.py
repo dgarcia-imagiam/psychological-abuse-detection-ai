@@ -47,7 +47,7 @@ class ChatModelDescription(BaseModel):
     @computed_field
     @property
     def full_name(self) -> str:
-        return f"{self.engine}.{self.params['model']}"
+        return f'{self.engine}.{self.params.get("model") or self.params.get("model_id") or "unknown"}'
 
     model_config = ConfigDict(extra="forbid")
 

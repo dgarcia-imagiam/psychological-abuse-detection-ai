@@ -13,7 +13,7 @@ from padai.llms.base import ChatModelDescriptionEx, get_chat_model
 from padai.llms.available import default_available_models_registry, default_available_models
 import logging
 from padai.chains.abuse_analyzer import get_abuse_analyzer_params
-from padai.utils.text import make_label, strip_text
+from padai.utils.text import make_label, strip_text, process_response
 
 logger = logging.getLogger(__name__)
 
@@ -388,7 +388,7 @@ def run_analysis(n_clicks, model_id, temperature, system_prompt_no_ctx, human_pr
         temperature=temp,
     )
     try:
-        result: str = chain.invoke(params)
+        result: str = process_response(chain.invoke(params))
     except Exception as exc:  # fallback
         return "", f"⚠️ Error inesperado: {exc}"
 

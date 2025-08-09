@@ -1,4 +1,5 @@
 from padai.config.settings import settings
+from padai.config.huggingface import get_default_device_int
 from langchain_huggingface import HuggingFacePipeline, ChatHuggingFace
 from typing import Dict, Any
 
@@ -26,8 +27,8 @@ def get_chat_huggingface(params: Dict[str, Any]) -> ChatHuggingFace:
 
     llm = HuggingFacePipeline.from_model_id(
         model_id=params["model_id"],
-        task=params["task"],
-        device=params["device"],
+        task=params.get("task", "text-generation"),
+        device=params.get("device", get_default_device_int()),
         model_kwargs=model_kwargs,
         pipeline_kwargs=pipeline_kwargs,
     )

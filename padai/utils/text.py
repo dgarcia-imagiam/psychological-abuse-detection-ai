@@ -1,6 +1,7 @@
 import re
 from typing import Dict
 import textwrap
+import re
 
 
 def substitute_placeholders(text: str, mapping: Dict[str, str]) -> str:
@@ -53,3 +54,17 @@ def make_label(text: str, width: int = 40) -> str:
 
 def strip_text(text: str | None):
     return (text or "").strip()
+
+
+def process_response_strip(response: str) -> str:
+    return response.strip()
+
+
+def process_response_reasoning(response: str) -> str:
+    return re.sub(r"<(reasoning|analysis)>.*?</\1>", "", response, flags=re.DOTALL).strip()
+
+
+def process_response(response: str) -> str:
+    response = process_response_strip(response)
+    response = process_response_reasoning(response)
+    return response
