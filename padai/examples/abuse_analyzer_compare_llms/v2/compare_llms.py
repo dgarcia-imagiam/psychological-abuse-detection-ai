@@ -10,7 +10,7 @@ def main() -> None:
     run(
         models,
         models_registry,
-        Path("abuse_analyzer_compare_llms/v2"),
+        "abuse_analyzer_compare_llms/v2",
     )
 
 

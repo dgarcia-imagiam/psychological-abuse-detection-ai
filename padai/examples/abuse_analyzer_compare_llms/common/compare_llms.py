@@ -10,7 +10,7 @@ from padai.chains.abuse_analyzer import (
     get_abuse_analyzer_compare_llm_prompts,
 )
 from padai.prompts.psychological_abuse import compare_llm_responses
-from typing import Dict, MutableMapping, List, Set
+from typing import Dict, MutableMapping, List, Set, cast
 from itertools import combinations
 from padai.chains.base import build_prompt_llm_parser_chain
 from padai.plots.compare_llms import (
@@ -33,6 +33,7 @@ from pathlib import Path
 import hashlib
 import logging
 import pandas as pd
+from padai.experiments.base import Experiments
 
 
 logger = logging.getLogger(__name__)
@@ -51,10 +52,15 @@ def invoke(
 
     system_prompt, human_prompt = get_abuse_analyzer_prompts(language, severity, user_context=context)
 
-    chain = build_prompt_llm_parser_chain(description, system_prompt, human_prompt)
-    response: str = chain.invoke(params)
+    chain, disposable = build_prompt_llm_parser_chain(description, system_prompt, human_prompt)
 
-    return response
+    try:
+        return chain.invoke(params)
+
+    finally:
+        # Important: drop chain reference so GC can break the link to llm
+        del chain
+        disposable.dispose()
 
 
 def _fingerprint(text: str, context: str) -> str:
@@ -78,7 +84,7 @@ def invoke_cached(
     if key in llm_cache:          # hit
         return llm_cache[key]
 
-    response = invoke(severity, text, context, language, model)
+    response: str = cast(str, invoke(severity, text, context, language, model))
     llm_cache[key] = response
     return response
 
@@ -154,7 +160,7 @@ def get_referee_errors(scores: Dict[int, Dict[str, pd.DataFrame]]) -> pd.DataFra
 def run(
         descriptions: List[ChatModelDescriptionEx],
         descriptions_registry: Dict[str, ChatModelDescriptionEx],
-        path_in_cache: Path,
+        relative: str | Path,
 ) -> None:
 
     set_llm_sqlite_cache()
@@ -169,7 +175,9 @@ def run(
 
     scores: Dict[int, Dict[str, pd.DataFrame]] = {}
 
-    cache_path = settings.path_in_cache(path_in_cache, is_file=False)
+    cache_path = settings.path_in_cache(relative, is_file=False)
+
+    experiments: Experiments = Experiments(relative)
 
     for id_ in communications_df.index:
         communication = get_or_create_communication(id_, communications_df)
@@ -193,31 +201,37 @@ def run(
                 for left, right in combinations(descriptions, 2):
                     logger.info(f"{left.full_name} vs {right.full_name}")
 
-                    left_response: str = invoke_cached(llm_cache, severity, text, context, language, left)
-                    right_response: str = invoke_cached(llm_cache, severity, text, context, language, right)
+                    left_response: str = process_response(invoke_cached(llm_cache, severity, text, context, language, left))
+                    right_response: str = process_response(invoke_cached(llm_cache, severity, text, context, language, right))
 
                     params = get_abuse_analyzer_compare_llm_params(text, left_response, right_response, context=context)
 
                     system_prompt, human_prompt = get_abuse_analyzer_compare_llm_prompts(language)
 
-                    chain = build_prompt_llm_parser_chain(
+                    chain, disposable = build_prompt_llm_parser_chain(
                         referee,
                         system_prompt,
                         human_prompt,
                         temperature=0,
                         top_p=1,
                     )
-                    response: str = process_response(chain.invoke(params))
+                    try:
+                        response: str = process_response(chain.invoke(params))
+
+                    finally:
+                        # Important: drop chain reference so GC can break the link to llm
+                        del chain
+                        disposable.dispose()
 
                     logger.info(f"Response: {response}")
 
-                    if response.strip().startswith(compare_llm_responses[language]["left"]):
+                    if response.startswith(compare_llm_responses[language]["left"]):
                         df.at[left.full_name, right.full_name] = 2
                         df.at[right.full_name, left.full_name] = 0
-                    elif response.strip().startswith(compare_llm_responses[language]["right"]):
+                    elif response.startswith(compare_llm_responses[language]["right"]):
                         df.at[left.full_name, right.full_name] = 0
                         df.at[right.full_name, left.full_name] = 2
-                    elif response.strip().startswith(compare_llm_responses[language]["tie"]):
+                    elif response.startswith(compare_llm_responses[language]["tie"]):
                         df.at[left.full_name, right.full_name] = 1
                         df.at[right.full_name, left.full_name] = 1
                     else:
@@ -235,7 +249,7 @@ def run(
                 ),
                 title=f"LLM Score Matrix ({referee.full_name}, {id_})"
             )
-            fig.show()
+            experiments.add_figure(fig, "llm_score_matrix")
 
             total_df = get_total_scores(scores)
             total_mode_df = get_total_mode_scores(scores)
@@ -247,7 +261,7 @@ def run(
                 ),
                 title="LLM Score Matrix (Average)"
             )
-            total_fig.show()
+            experiments.add_figure(total_fig, "llm_score_matrix_average")
 
             total_mode_fig = create_compare_llm_figure(
                 ChatModelDescriptionEx.nice_index(
@@ -256,7 +270,7 @@ def run(
                 ),
                 title="LLM Score Matrix (Mode)"
             )
-            total_mode_fig.show()
+            experiments.add_figure(total_mode_fig, "llm_score_matrix_mode")
 
             errors = get_referee_errors(scores)
 
@@ -267,7 +281,7 @@ def run(
                 ),
                 title="LLM Referee Errors (MSE)"
             )
-            errors_mse_barplot.show()
+            experiments.add_figure(errors_mse_barplot, "llm_referee_errors_mse")
 
             errors_mode_barplot = barplot_with_outliers(
                 ChatModelDescriptionEx.nice_index(
@@ -277,13 +291,14 @@ def run(
                 title="LLM Referee Errors (Mode)",
                 decimals=0
             )
-            errors_mode_barplot.show()
+            experiments.add_figure(errors_mode_barplot, "llm_referee_errors_mode")
 
             barplot = create_compare_llm_barplot_figure(
                 ChatModelDescriptionEx.nice_index(
                     get_normalized_row_scores(scores),
                     descriptions_registry
                 ),
-                title="LLM Ranking"
+                title="LLM Ranking",
+                dpi=200,
             )
-            barplot.show()
+            experiments.add_figure(barplot, "llm_ranking")

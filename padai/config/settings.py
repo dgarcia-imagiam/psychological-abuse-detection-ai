@@ -8,6 +8,7 @@ from padai.config.aws import BedrockSettings
 from padai.config.google import GoogleSettings
 from padai.config.huggingface import HuggingFaceSettings
 from padai.config.language import Language
+from padai.config.experiment import ExperimentSettings
 from padai.llms.engine import ChatEngine
 from slugify import slugify
 import os
@@ -37,6 +38,8 @@ class AppSettings(BaseSettings):
     huggingface: HuggingFaceSettings = Field(default_factory=HuggingFaceSettings)
 
     default_chat_model: ChatEngine = "openai"
+
+    experiment: ExperimentSettings = Field(default_factory=ExperimentSettings)
 
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",
@@ -90,6 +93,15 @@ class AppSettings(BaseSettings):
 
         return full_path
 
+    def _path_in_x(
+            self,
+            x: str,
+            relative: str | Path,
+            is_file: bool,
+            create: bool,
+    ) -> Path:
+        return self.path_in_home(Path(x) / relative, is_file=is_file, create=create)
+
     def path_in_cache(
             self,
             relative: str | Path,
@@ -97,8 +109,18 @@ class AppSettings(BaseSettings):
             is_file: bool = True,
             create: bool = True,
     ) -> Path:
-        return self.path_in_home(Path("cache") / relative, is_file=is_file, create=create)
+        return self._path_in_x("cache", relative, is_file, create)
+
+    def path_in_experiments(
+            self,
+            relative: str | Path,
+            *,
+            is_file: bool = True,
+            create: bool = True,
+    ) -> Path:
+        return self._path_in_x("experiments", relative, is_file, create)
 
 
 settings = AppSettings()
+
 

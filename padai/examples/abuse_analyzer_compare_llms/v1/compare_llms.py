@@ -10,7 +10,7 @@ def main() -> None:
     run(
         default_available_models,
         default_available_models_registry,
-        Path("abuse_analyzer_compare_llms/v1"),
+        "abuse_analyzer_compare_llms/v1",
     )
 
 
