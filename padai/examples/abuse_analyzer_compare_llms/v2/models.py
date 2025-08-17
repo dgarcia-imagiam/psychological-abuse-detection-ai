@@ -7,8 +7,9 @@ MAX_NEW_TOKENS = 16 * 1024
 _BASE_MODELS: List[ChatModelDescriptionEx] = [
     ChatModelDescriptionEx(id="gpt-5",          label="OpenAI: GPT-5",          engine="openai",    params={"model": "gpt-5"},      tags={"no-temperature"}),
     ChatModelDescriptionEx(id="gpt-5-mini",     label="OpenAI: GPT-5-mini",     engine="openai",    params={"model": "gpt-5-mini"}, tags={"no-temperature"}),
-    ChatModelDescriptionEx(id="gpt-5-nano",     label="OpenAI: GPT-5-nano",     engine="openai",    params={"model": "gpt-5-nano"}, tags={"no-temperature"}),
+    # ChatModelDescriptionEx(id="gpt-5-nano",     label="OpenAI: GPT-5-nano",     engine="openai",    params={"model": "gpt-5-nano"}, tags={"no-temperature"}),
     ChatModelDescriptionEx(id="o3",             label="OpenAI: o3",             engine="openai",    params={"model": "o3"},         tags={"no-temperature"}),
+    ChatModelDescriptionEx(id="gpt-4.1",        label="OpenAI: GPT-4.1",        engine="openai",    params={"model": "gpt-4.1"}),
     ChatModelDescriptionEx(id="gpt-4.1-mini",   label="OpenAI: GPT-4.1 mini",   engine="openai",    params={"model": "gpt-4.1-mini"}),
 
     ChatModelDescriptionEx(id="gpt-oss-120b",           label="AWS BedRock: GPT-OSS-120B",              engine="bedrock",   params={"model": "openai.gpt-oss-120b-1:0", "region_name": "us-west-2"}),

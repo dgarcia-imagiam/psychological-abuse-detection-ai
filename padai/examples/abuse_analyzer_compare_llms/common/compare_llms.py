@@ -212,7 +212,7 @@ def run(
                         referee,
                         system_prompt,
                         human_prompt,
-                        temperature=0,
+                        temperature=0.05,
                         top_p=1,
                     )
                     try:

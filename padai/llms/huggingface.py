@@ -33,4 +33,4 @@ def get_chat_huggingface(params: Dict[str, Any]) -> ChatHuggingFace:
         model_kwargs=model_kwargs,
         pipeline_kwargs=pipeline_kwargs,
     )
-    return ChatHuggingFace(llm=llm)
+    return ChatHuggingFace(llm=llm, cache=False)
