@@ -10,13 +10,12 @@ from padai.chains.abuse_analyzer import (
     get_abuse_analyzer_compare_llm_prompts,
 )
 from padai.prompts.psychological_abuse import compare_llm_responses
-from typing import Dict, MutableMapping, List, Set, cast
+from typing import Dict, MutableMapping, List, Set, cast, Optional
 from itertools import combinations
 from padai.chains.base import build_prompt_llm_parser_chain
 from padai.plots.compare_llms import (
     create_compare_llm_figure,
     create_empty_compare_llm_dataframe,
-    is_valid_compare_llm_dataframe,
     get_row_scores,
     get_row_scores_many,
     normalize_scores,
@@ -162,6 +161,8 @@ def run(
         descriptions: List[ChatModelDescriptionEx],
         descriptions_registry: Dict[str, ChatModelDescriptionEx],
         relative: str | Path,
+        *,
+        ignore_referees: Optional[Set[str]] = None
 ) -> None:
 
     set_llm_sqlite_cache()
@@ -179,6 +180,9 @@ def run(
     cache_path = settings.path_in_cache(relative, is_file=False)
 
     experiments: Experiments = Experiments(relative)
+
+    if ignore_referees is None:
+        ignore_referees = set()
 
     for id_ in communications_df.index:
         communication = get_or_create_communication(id_, communications_df)
@@ -241,7 +245,7 @@ def run(
 
                 df.to_pickle(df_path)
 
-            if not is_valid_compare_llm_dataframe(df):
+            if referee.full_name in ignore_referees:
                 logger.info(f"Ignoring referee: {referee.full_name}")
                 continue
 

@@ -18,38 +18,6 @@ def create_empty_compare_llm_dataframe(names: List[str]):
     return df
 
 
-def is_valid_compare_llm_dataframe(df: pd.DataFrame, threshold: float = 0.8) -> bool:
-    """
-    Returns True if the fraction of off-diagonal cells that are >= 0
-    is at least `threshold`. Diagonal cells are ignored.
-    - NaN is treated as invalid (counts toward the denominator but not valid).
-    - Requires a square DataFrame.
-    - Returns True if there are no off-diagonal cells (e.g., 1x1).
-    """
-    if df.shape[0] != df.shape[1]:
-        raise ValueError("DataFrame must be square (same number of rows and columns).")
-
-    n = df.shape[0]
-    values = df.to_numpy()
-    total = 0
-    valid = 0
-
-    for y in range(n):           # rows
-        for x in range(n):       # columns
-            if x == y:
-                continue
-            total += 1
-            cell = values[y, x]
-            # NaN >= 0 -> False; object dtype might raise, so ensure numeric DF upstream
-            if cell >= 0:
-                valid += 1
-
-    if total == 0:
-        return True  # nothing to check
-
-    return (valid / total) >= threshold
-
-
 def create_compare_llm_figure(df: pd.DataFrame, title: Optional[str] = None, default_min_max: Optional[Tuple[float, float]] = (0., 2.)):
     """
     Produce a square, color‑coded matrix plot for a DataFrame whose
