@@ -24,6 +24,8 @@ def get_chat_huggingface(params: Dict[str, Any]) -> ChatHuggingFace:
     model_kwargs = {k: v for k, v in params.items() if k not in gen_keys | {"model_id", "task", "device"}}
 
     pipeline_kwargs.setdefault("return_full_text", False)  # strip prompt
+    pipeline_kwargs["disable_compile"] = True
+
     model_kwargs.setdefault("torch_dtype", "auto")
 
     llm = HuggingFacePipeline.from_model_id(

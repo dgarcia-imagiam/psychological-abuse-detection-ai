@@ -16,6 +16,7 @@ from padai.chains.base import build_prompt_llm_parser_chain
 from padai.plots.compare_llms import (
     create_compare_llm_figure,
     create_empty_compare_llm_dataframe,
+    is_valid_compare_llm_dataframe,
     get_row_scores,
     get_row_scores_many,
     normalize_scores,
@@ -239,6 +240,10 @@ def run(
                         df.at[right.full_name, left.full_name] = -2
 
                 df.to_pickle(df_path)
+
+            if not is_valid_compare_llm_dataframe(df):
+                logger.info(f"Ignoring referee: {referee.full_name}")
+                continue
 
             scores[id_][referee.full_name] = df
 
